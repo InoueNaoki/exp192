@@ -54,6 +54,7 @@ phina.define('MainScene', {
 
     self.setCell(cellGroup,grid,objPlace,self,p1,p2,rw);
 
+    //経過時間を表示する
     var label = Label({
       text: '',
       fill: 'lime',
@@ -68,7 +69,8 @@ phina.define('MainScene', {
     };
 
   },
-  //部屋を配置
+
+  /* 部屋を配置する */
   setCell: function(cellGroup,grid,objPlace,self,p1,p2,rw){
     CELL_NUM_XY.times(function(coordX) {
       CELL_NUM_XY.times(function(coordY) {
@@ -108,6 +110,7 @@ phina.define('MainScene', {
     });
   },
 
+  /* 物体（p1,p2,rw）を配置 */
   setObj: function(objPlace,coordX,coordY,x,y,p1,p2,rw){
     switch(objPlace[coordX * CELL_NUM_XY + coordY]){
       case 1:
@@ -122,7 +125,7 @@ phina.define('MainScene', {
     }
   },
 
-  //　ランダムな配列を生成
+  /* ランダムな配列を生成 */
   createObjArr: function () {
     // プレイヤーと報酬の位置の配列
     const objPlace = [];
@@ -167,7 +170,7 @@ phina.define('MainScene', {
 //     },
 // });
 
-// メイン
+/* メイン */
 phina.main(function() {
   const app = GameApp({
     startLabel: 'main', // メイン画面からスタート
