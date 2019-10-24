@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+  </head>
+  <body>
+    <ul id="history"></ul>
+    <form action="" id="formId">
+      <input id="shapeId">
+      <button id="btn">send</button>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const history = document.getElementById('history');
+      const form = document.forms.formId;
+      form.btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        socket.emit('chat', form.shapeId.value);
+        form.shapeId.value = '';
+      });
+      socket.on('chat', (msg) => {
+        const li = document.createElement('li');
+        li.textContent = msg;
+        history.appendChild(li);
+      });
+    </script>
+  </body>
+</html>

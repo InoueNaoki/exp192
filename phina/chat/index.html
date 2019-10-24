@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Socket.IO chat</title>
+  <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+  <!-- <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font: 13px Helvetica, Arial;
+    }
+
+    form {
+      background: #000;
+      padding: 3px;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+
+    form input {
+      border: 0;
+      padding: 10px;
+      width: 90%;
+      margin-right: .5%;
+    }
+
+    form button {
+      width: 9%;
+      background: rgb(130, 224, 255);
+      border: none;
+      padding: 10px;
+    }
+
+    #messages {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    #messages li {
+      padding: 5px 10px;
+    }
+
+    #messages li:nth-child(odd) {
+      background: #eee;
+    }
+  </style> -->
+</head>
+
+<body>
+  <!-- <form action="">
+    <input id="m" name="text" autocomplete="off" />
+    <button name = "btn">Send</button>
+  </form>
+  <ul id="messages"></ul> -->
+  <form name="myform">
+    <input name="text" type="text">
+    <button name="btn">送信</button>
+  </form>
+
+  <hr>
+
+  <ul id="message"></ul>
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- <script src="https://code.jquery.com/jquery-1.11.1.js"></script> -->
+  <script>
+    // $(function () {
+    //   var socket = io();
+    //   $('form').submit(function (e) {
+    //     e.preventDefault(); // prevents page reloading
+    //     socket.emit('chat message', $('#m').val());
+    //     $('#m').val('');
+    //     return false;
+    //   });
+    //   socket.on('chat message', function (msg) {
+    //     $('#messages').append($('<li>').text(msg));
+    //   });
+    // });
+    // window.onload = function () {
+    //   var socket = io();
+    //   var submit = document.getElementById('submit');
+    //   submit.addEventListener('click', function (e) {
+    //     e.preventDefault();
+    //     socket.emit('chat message', document.getElementById('m').value);
+    //     document.getElementById('m').value = '';
+    //     return false;
+    //   });
+    //   socket.on('chat message', function (msg) {
+    //     document.getElementById('message').appendChild('<li> hello ');
+    //       //text(msg) 
+    //   });
+    // }
+    const socket = io();
+    const message = document.getElementById('message');
+    const form = document.forms[0];
+    socket.on('connect',  ()=> {
+      socket.emit('setUserName', prompt('ユーザー名を入力してください'));
+    });
+    form.btn.addEventListener('click', (e)=> {
+      e.preventDefault();
+      socket.emit('chat',form.text.value);
+      form.text.value = '';
+    });
+    socket.on('chat', (msg)=> {
+      const li = document.createElement('li');
+      li.textContent = msg;
+      message.appendChild(li);
+    });
+  </script>
+</body>
+
+</html>
