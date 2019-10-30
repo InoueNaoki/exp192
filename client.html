@@ -1,21 +1,22 @@
 <!doctype html>
-<html>
+<html lang="ja">
   <head>
+    <meta charset="utf-8">
     <title>Socket.IO chat</title>
-    <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
   </head>
   <body>
     <ul id="history"></ul>
     <form action="" id="formId">
       <input id="shapeId">
-      <button id="btn">send</button>
+      <button id="mesbtn">send</button>
     </form>
-    <script src="/socket.io/socket.io.js"></script>
     <script>
       const socket = io();
       const history = document.getElementById('history');
       const form = document.forms.formId;
-      form.btn.addEventListener('click', (e) => {
+      form.mesbtn.addEventListener('click', (e) => {
         e.preventDefault();
         socket.emit('chat', form.shapeId.value);
         form.shapeId.value = '';
