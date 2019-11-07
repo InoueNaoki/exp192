@@ -2,7 +2,8 @@ const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const port = process.env.PORT || 3000;
-const clientsObj = io.sockets.connected;//ここにオブジェクト形式で接続中の"すべての"クライアントの情報入ってるのでそれを取り出す
+const ip = '127.0.0.1';
+
 const LOBBY_NAME = 'lobby';
 const tableList = [];
 let roomId = '初期宣言';
@@ -13,15 +14,13 @@ app.get('/', (req, res)=> {
 app.get('/game.js', (req, res)=> {
     res.sendFile(__dirname + '/game.js');
 });
-app.get('/img/loading.png', (req, res) => {
-    res.sendFile(__dirname + '/img/loading.png');
-});
+
 io.on('connection', (socket) => {
     const playerId = socket.id;
     socket.on('join lobby', () => {
         socket.join(LOBBY_NAME);
         console.log('-------------------------------------------------------------------------');
-        const lobbyConnected = io.sockets.adapter.rooms[LOBBY_NAME];
+        const lobbyConnected = io.sockets.adapter.rooms[LOBBY_NAME];//ここにオブジェクト形式で接続中の"すべての"クライアントの情報入ってるのでそれを取り出す
         console.log(lobbyConnected);
         // if (tableList.length == 0) {
         //     //最初のユーザー
@@ -39,7 +38,7 @@ io.on('connection', (socket) => {
         
         roomId = 'room' + (Math.ceil(lobbyConnected.length / 2) - 1);
         socket.join(roomId);
-        io.emit('start game', roomId);
+        io.emit('join room', roomId);
     });
     socket.on('send message', (msg) => {
         socket.broadcast.to(roomId).emit('receive message', msg);
@@ -54,6 +53,9 @@ io.on('connection', (socket) => {
     });
 });
 
-http.listen(port, () => {
+// http.listen(port, () => {
+//     console.log('listening on *:' + port);
+// });
+http.listen(port, ip, () => {
     console.log('listening on *:' + port);
 });

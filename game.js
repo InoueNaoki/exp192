@@ -67,8 +67,8 @@ phina.define('MatchmakingScene', {
         label.tweener.wait(1000).fadeOut(1000).wait(500).fadeIn(1000).setLoop(true).play();
         const self = this;
         socket.emit('join lobby');
-        socket.on('start game', roomId => {
-            console.log('start game at ' + roomId);
+        socket.on('join room', roomId => {
+            console.log('join room to ' + roomId);
             self.exit();// to MainScene
         });
     },
