@@ -113,8 +113,7 @@ phina.define('MsgFrame', {
                 else currentShapeIndex++;
             };
         } else {
-            console.log('test');
-            socket.on('receive message', (msg) => {
+            socket.on('new message', (msg) => {
                 this.drawShape(msg);
             });
         }
