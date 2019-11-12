@@ -1,3 +1,4 @@
+const conf = require('config');
 /* express初期設定 */
 const app = require('express')();
 const http = require('http').createServer(app);
@@ -24,34 +25,20 @@ logger.level = 'trace';
 
 /* socket.io初期設定 */
 const io = require('socket.io')(http);
+
+const LOBBY_NAME = conf.lobbyName;
+
 /**
- * 待機ロビー名(socketioのルーム名)
+ * ペア(部屋)名=socketioのルームid
  * @type {String}
  */
-const LOBBY_NAME = 'lobby';
-/**
- * 対戦部屋名(socketioのルーム名)
- * @type {String}
- */
-let roomId;
+let pairId;
+
+let isHost;
 
 /*　mysql初期設定　*/
 const mysql = require('mysql');
-const dbConfig = {
-    host: 'localhost', //接続先ホスト
-    user: 'exp192_user',      //ユーザー名
-    password: 'acml2016',          //パスワード
-    database: 'exp192'       //DB名
-};
-
-//mysql接続
-// const connection = mysql.createConnection(dbConfig);
-// connection.connect((err) => {
-//     if (err) {
-//         logger.error(err);
-//     };
-//     logger.info('[mysql]connected successfully');
-// });
+const dbConfig = conf.mysql;
 
 /* ファイル読み込み */
 app.get('/', (req, res)=> {
@@ -63,55 +50,54 @@ app.get('/game.js', (req, res)=> {
 
 /* socket.io接続 */
 io.on('connection', (socket) => {
-    const socketId = socket.id;
-    logger.info('[socket.io]' + socketId + ' connected successfully');
+    const currentSocketId = socket.id;
+    const cookieId = currentSocketId;　//現時点ではソケットIDで代用，いずれはCookieかユーザー記入式のIDで対応
+    logger.info('[socket.io]' + currentSocketId + ' connected successfully');
     
     /* マッチメイキング　*/
     socket.on('join lobby', async () => {
         socket.join(LOBBY_NAME); // 待機ロビーに入室
-        logger.info('[socket.io]' + socketId + ' joined lobby');
+        logger.info('[socket.io]' + currentSocketId + ' joined lobby');
 
-        const uniqueUserId = socketId;　//ユニークユーザーのID，現時点ではソケットIDで代用，いずれはキャッシュかユーザー記入式のIDで対応
+        const createPlayerRecord = await sqlQuery(`INSERT INTO players(cookie_id,current_socket_id) VALUES ("${cookieId}","${currentSocketId}");`);
+        const playerId = createPlayerRecord['insertId'];
 
-        const sqlResult1 = await sqlQuery(`INSERT INTO players(socket_id) VALUES ("${socketId}");`);
-        const playerId = sqlResult1['insertId'];
+        const selectMinId = await sqlQuery(`SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;`);
+        const mostWaitingPairId = selectMinId[0]['MIN(id)'];
 
-        // const sqlResult2 = await sqlQuery(`SELECT EXISTS(SELECT * FROM pairs);`);
-        // const pairsTableExists = sqlResult2[0]['EXISTS(SELECT * FROM pairs)'];
-
-        const sqlResult4 = await sqlQuery(`select MIN(id) from pairs WHERE guest_id IS NULL;`);
-        const mostWaitingPairId = sqlResult4[0]['MIN(id)'];
-
-        let isHost;
         if (!mostWaitingPairId) { 
-            const sqlResult3 = await sqlQuery(`INSERT INTO pairs(host_id) VALUES ("${playerId}");`);
-            const pairId = sqlResult3['insertId'];
-            console.log(pairId + 'のほすとになるよ' + playerId);
+            const createPairRecord = await sqlQuery(`INSERT INTO pairs(host_id) VALUES ("${currentSocketId}");`);
+            pairId = createPairRecord['insertId'];
+            console.log(playerId+' is host of room'+pairId);
             isHost = true;
         } else {
-            const sqlResult5 = await sqlQuery(`UPDATE pairs SET guest_id = "${playerId}" WHERE id = "${mostWaitingPairId}";`);
-            const pairId = sqlResult5['insertId'];
-            console.log(pairId + 'のげすとになるよ' + playerId);
+            await sqlQuery(`UPDATE pairs SET guest_id = "${currentSocketId}" WHERE id = "${mostWaitingPairId}";`);
+            pairId = mostWaitingPairId;
+            console.log(playerId + ' is guest of room' + pairId);
             isHost = false;
         }
-        const lobbyConnected = io.sockets.adapter.rooms[LOBBY_NAME];//ここにオブジェクト形式で接続中の"すべての"クライアントの情報入ってる
+        // const lobbyConnected = io.sockets.adapter.rooms[LOBBY_NAME];//ここにオブジェクト形式で接続中の"すべての"クライアントの情報入ってる
         // roomId = 'room' + (Math.ceil(lobbyConnected.length / 2) - 1);
-        await async function(){
-            console.log('ここにいる');
-            await socket.join(pairId);
-            await io.emit('join room', pairId);
-        }
+        // await async function(){
+        //     console.log('ここにいる');
+
+        socket.join(pairId);
+        io.emit('join room', pairId);
+        // }
     });
 
     /* メッセージ送信　*/
     socket.on('send message', (msg) => {
-        socket.broadcast.to(roomId).emit('new message', msg);
-        logger.debug(socketId+'send msg to '+roomId+': ' + msg);
+        socket.broadcast.to(pairId).emit('new message', msg);
+        logger.debug(currentSocketId+'send msg to '+pairId+': ' + msg);
     });
 
     /* ソケット切断時の処理 */
-    socket.on('disconnect', ()=> {
-        logger.info('[socket.io]'+socketId+' disconnected');
+    socket.on('disconnect', () => {
+        logger.info('[socket.io]' + currentSocketId + ' disconnected');
+        // const columnName = isHost ? 'host_id' : 'guest_id';
+        // sqlQuery(`UPDATE pairs SET ${columnName} = NULL WHERE id = ${pairId};`);
+        // これだとpairIdやcurrentSocketIdが最後に通信を始めたプレーヤーのものになってしまう
     });
 });
 
@@ -141,15 +127,21 @@ http.listen(port, ip, () => {
 //     });
 // }
 
+/**
+ * MySQLにSQL文を投げる関数
+ * @param {String} sqlStatement SQL文 
+ */
 async function sqlQuery(sqlStatement) {
+    logger.trace('[mysql]' + sqlStatement);//投げられた文をトレース
     const pool = mysql.createPool(dbConfig);
     pool.query = util.promisify(pool.query);
     try {
         const result = await pool.query(sqlStatement);
+        logger.trace('[mysql]' + JSON.stringify(result)); //実行結果を返す．そのまま連結すると中身が見れなくなるのでJSON.stringify()を使用
         pool.end();
         return result;
     } catch (err) {
-        throw new Error(err)
+        throw logger.error(err);
     }
 }
 

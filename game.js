@@ -5,14 +5,14 @@ const socket = io();
 let playerId;
 socket.on('connect', () => {
     playerId = socket.id;
-    console.log(playerId + ' connect');
+    console.log('YOU ARE '+playerId);
 });
 
 const SCREEN_WIDTH = 1920; // 画面横サイズ
 const SCREEN_HEIGHT = 1080; // 画面縦サイズ
 const MSG_FRAME_SIZE = 150;
 const BACK_GROUND_COLOR = 'white';
-const WORD_COLOR = 'black';
+const FONT_COLOR = 'black';
 const SHAPE_COLOR = 'black';
 const FONT_SIZE = 48;
 const CELL_NUM_X = 3; // 小部屋（マス目）のX軸方向の数
@@ -65,6 +65,7 @@ phina.define('MatchmakingScene', {
             fontSize: FONT_SIZE,
         }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-1));
         label.tweener.wait(1000).fadeOut(1000).wait(500).fadeIn(1000).setLoop(true).play();
+        Loading(8).setPosition(this.gridX.center(), this.gridY.center(+1)).addChildTo(this);
         const self = this;
         socket.emit('join lobby');
         socket.on('join room', roomId => {
@@ -85,6 +86,26 @@ phina.define('MainScene', {
         MsgFrame(200, 200, true).addChildTo(this);
         MsgFrame(400, 200, false).addChildTo(this);
         Board(500, 500).addChildTo(this); 
+    },
+});
+
+phina.define('Loading', {
+    superClass: 'DisplayElement',
+    init: function (circleNum) {
+        this.superInit();
+        const firstDeg = 360 / circleNum;
+        const self = this;
+        Array.range(0, 360,firstDeg).each((deg) => {
+            const rad = Math.degToRad(deg); // 度をラジアンに変換
+            const circle = CircleShape({ radius: FONT_SIZE / 5, fill: FONT_COLOR, }).addChildTo(self);
+            circle.alpha = (deg + firstDeg) / 360;
+            // 円周上に配置
+            circle.x = Math.cos(rad) * 40;
+            circle.y = Math.sin(rad) * 40;
+        });
+    },
+    update: function () {
+        this.rotation += 8;
     },
 });
 
@@ -205,7 +226,7 @@ phina.define('Timer', {
             x: x,
             y: y,
             text: '',
-            fill: WORD_COLOR,
+            fill: FONT_COLOR,
             fontSize: 20,
         });
         this.time = 0;
@@ -336,3 +357,8 @@ phina.main(()=> {
     // アプリケーション実行
     app.run();
 });
+
+window.onbeforeunload = (e) => {
+    e.preventDefault();// Cancel the event as stated by the standard.
+    e.returnValue = '';// Chrome requires returnValue to be set.
+}
