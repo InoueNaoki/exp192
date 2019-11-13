@@ -1,3 +1,15 @@
+//モバイルからアクセスがあった場合アクセス拒否
+if (UAParser().device.type === 'mobile') {
+    alert('PCからアクセスしてください');
+    location.replace('http://Google.com');//戻るURL指定
+}
+
+// Chrome以外から閲覧されている場合アクセス拒否
+if (UAParser().browser.name !== 'Chrome') {
+    alert('ブラウザをChromeに変更してください');
+    location.replace('http://Google.com');//戻るURL指定
+}
+
 // phina.js をグローバル領域に展開
 phina.globalize();
 
@@ -5,23 +17,27 @@ const socket = io();
 let playerId;
 socket.on('connect', () => {
     playerId = socket.id;
-    console.log('YOU ARE '+playerId);
+    console.log('You are '+playerId);
 });
 
-const SCREEN_WIDTH = 1920; // 画面横サイズ
-const SCREEN_HEIGHT = 1080; // 画面縦サイズ
-const MSG_FRAME_SIZE = 150;
-const BACK_GROUND_COLOR = 'white';
-const FONT_COLOR = 'black';
-const SHAPE_COLOR = 'black';
-const FONT_SIZE = 48;
-const CELL_NUM_X = 3; // 小部屋（マス目）のX軸方向の数
-const CELL_NUM_Y = 3; // 小部屋（マス目）のY軸方向の数
-const GRID_SIZE = 200; // グリッドのサイズ
-const CELL_SIZE = GRID_SIZE; // パネルの大きさ
-const WALL_WIDTH = 10;
-const CELL_COLOR = BACK_GROUND_COLOR;
-const WALL_COLOR = 'black';
+let conf;
+socket.on('initial setting', (initialSetting) => {
+    conf = initialSetting;
+});
+// const SCREEN_WIDTH = 1920; // 画面横サイズ
+// const SCREEN_HEIGHT = 1080; // 画面縦サイズ
+// const MSG_FRAME_SIZE = 150;
+// const BACKGROUND_COLOR = 'white';
+// const FONT_COLOR = 'black';
+// const SHAPE_COLOR = 'black';
+// const FONT_SIZE = 48;
+// const CELL_NUM_X = 3; // 小部屋（マス目）のX軸方向の数
+// const CELL_NUM_Y = 3; // 小部屋（マス目）のY軸方向の数
+// const GRID_SIZE = 200; // グリッドのサイズ
+// const CELL_SIZE = conf.GRID_SIZE; // パネルの大きさ
+// const WALL_WIDTH = 10;
+// const CELL_COLOR = BACKGROUND_COLOR;
+// const zWALL_COLOR = 'black';
 
 const SHAPE_LIST = [
     { id: 0, shape: 'circle' },
@@ -38,14 +54,14 @@ phina.define('StartScene', {
         // 親クラス初期化
         this.superInit(option);
         // 背景色
-        this.backgroundColor = BACK_GROUND_COLOR;
+        this.backgroundColor = conf.BACKGROUND_COLOR;
         Label({
             text: '指示があるまで始めないでください',
-            fontSize: FONT_SIZE,
+            fontSize: conf.FONT_SIZE,
         }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-1));
         const startBtn = Button({
             text: 'START',
-            fontSize: FONT_SIZE,
+            fontSize: conf.FONT_SIZE,
         }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(1));
         const self = this;
         startBtn.onpointstart = () => {
@@ -59,17 +75,25 @@ phina.define('MatchmakingScene', {
     init: function (option) {
         // 親クラス初期化
         this.superInit(option);
-        this.backgroundColor = BACK_GROUND_COLOR;
+        this.backgroundColor = conf.BACKGROUND_COLOR;
         const label = Label({
             text: 'マッチング中......\nブラウザを閉じないでください',
-            fontSize: FONT_SIZE,
+            fontSize: conf.FONT_SIZE,
         }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-1));
-        label.tweener.wait(1000).fadeOut(1000).wait(500).fadeIn(1000).setLoop(true).play();
-        Loading(8).setPosition(this.gridX.center(), this.gridY.center(+1)).addChildTo(this);
+        // label.tweener.wait(1000).fadeOut(1000).wait(500).fadeIn(1000).setLoop(true).play(); //呼吸アニメーション
+        const loading = Loading(8).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(+1));
         const self = this;
         socket.emit('join lobby');
-        socket.on('join room', roomId => {
-            console.log('join room to ' + roomId);
+        // socket.on('join room', roomId => {
+        //     console.log('join room to ' + roomId);
+        //     self.exit();// to MainScene
+        // });
+        socket.on('complete matchmake', async (pairId) => {
+            console.log(pairId + 'のマッチングが完了');
+            label.text = conf.COMPLETE_MATCHMAKE_MSG;
+            label.fill = 'seagreen';
+            loading.remove();
+            await wait(1);
             self.exit();// to MainScene
         });
     },
@@ -80,12 +104,12 @@ phina.define('MainScene', {
     superClass: 'DisplayScene',
     init: function (option) {
         this.superInit(option);
-        this.backgroundColor = BACK_GROUND_COLOR;// 背景色を指定
-        Timer(100, 50).addChildTo(this);
-        Submit(200, 100).addChildTo(this);
-        MsgFrame(200, 200, true).addChildTo(this);
-        MsgFrame(400, 200, false).addChildTo(this);
-        Board(500, 500).addChildTo(this); 
+        this.backgroundColor = conf.BACKGROUND_COLOR;// 背景色を指定
+        Timer().addChildTo(this).setPosition(100, 50);
+        Submit().addChildTo(this).setPosition(200, 100);
+        MsgFrame(true).addChildTo(this).setPosition(200, 200);
+        MsgFrame(false).addChildTo(this).setPosition(400, 200);
+        Board().addChildTo(this).setPosition(500, 500);
     },
 });
 
@@ -95,9 +119,9 @@ phina.define('Loading', {
         this.superInit();
         const firstDeg = 360 / circleNum;
         const self = this;
-        Array.range(0, 360,firstDeg).each((deg) => {
+        Array.range(0, 360, firstDeg).each((deg) => {
             const rad = Math.degToRad(deg); // 度をラジアンに変換
-            const circle = CircleShape({ radius: FONT_SIZE / 5, fill: FONT_COLOR, }).addChildTo(self);
+            const circle = CircleShape({ radius: conf.FONT_SIZE / 5, fill: conf.FONT_COLOR, }).addChildTo(self);
             circle.alpha = (deg + firstDeg) / 360;
             // 円周上に配置
             circle.x = Math.cos(rad) * 40;
@@ -113,13 +137,11 @@ phina.define('MsgFrame', {
     // Shapeを継承
     superClass: 'Button',
     // コンストラクタ
-    init: function (x,y,isSend) {
+    init: function (isSend) {
         // 親クラス初期化
         this.superInit({
-            x: x,             // x座標
-            y: y,             // y座標
-            width: MSG_FRAME_SIZE,
-            height: MSG_FRAME_SIZE,
+            width: conf.MSG_FRAME_SIZE,
+            height: conf.MSG_FRAME_SIZE,
             fill: 'transparent', // 塗りつぶし色
             stroke: 'darkgray',
             text: '',
@@ -138,48 +160,48 @@ phina.define('MsgFrame', {
                 this.drawShape(msg);
             });
         }
-        
+
     },
     drawShape: function (shape) {
         if (this.children[0]) this.children[0].remove(); //既に画像があれば削除
         switch (shape) {
             case 'circle':
                 CircleShape({
-                    radius: MSG_FRAME_SIZE / 2 * 0.8,
+                    radius: conf.MSG_FRAME_SIZE / 2 * 0.8,
                     fill: 'black',
                 }).addChildTo(this);
                 break;
             case 'triangle':
                 TriangleShape({
-                    radius: MSG_FRAME_SIZE / 2,
+                    radius: conf.MSG_FRAME_SIZE / 2,
                     fill: 'black',
-                    y: MSG_FRAME_SIZE * 0.1,
+                    y: conf.MSG_FRAME_SIZE * 0.1,
                 }).addChildTo(this);
                 break;
             case 'square':
                 RectangleShape({
-                    width: MSG_FRAME_SIZE * 0.8,
-                    height: MSG_FRAME_SIZE * 0.8,
+                    width: conf.MSG_FRAME_SIZE * 0.8,
+                    height: conf.MSG_FRAME_SIZE * 0.8,
                     fill: 'black',
                 }).addChildTo(this);
                 break;
             case 'hexagon':
                 PolygonShape({
-                    radius: MSG_FRAME_SIZE / 2 * 0.9,
+                    radius: conf.MSG_FRAME_SIZE / 2 * 0.9,
                     fill: 'black',
                     sides: 6,
                 }).addChildTo(this);
                 break;
             case 'diamond':
                 PolygonShape({
-                    radius: MSG_FRAME_SIZE / 2 * 0.9,
+                    radius: conf.MSG_FRAME_SIZE / 2 * 0.9,
                     fill: 'black',
                     sides: 4,
                 }).addChildTo(this);
                 break;
             case 'octagon':
                 PolygonShape({
-                    radius: MSG_FRAME_SIZE / 2 * 0.9,
+                    radius: conf.MSG_FRAME_SIZE / 2 * 0.9,
                     fill: 'black',
                     sides: 8,
                     rotation: 22.5,
@@ -194,10 +216,8 @@ phina.define('MsgFrame', {
 
 phina.define('Submit', {
     superClass: 'Button',
-    init: function (x, y) {
+    init: function () {
         this.superInit({
-            x: x,             // x座標
-            y: y,             // y座標
             width: 100,         // 横サイズ
             height: 40,        // 縦サイズ
             text: 'send',     // 表示文字
@@ -221,12 +241,10 @@ phina.define('Submit', {
 
 phina.define('Timer', {
     superClass: 'Label',
-    init: function (x, y) {
+    init: function () {
         this.superInit({
-            x: x,
-            y: y,
             text: '',
-            fill: FONT_COLOR,
+            fill: conf.FONT_COLOR,
             fontSize: 20,
         });
         this.time = 0;
@@ -243,33 +261,30 @@ phina.define('Timer', {
 
 // ゲーム盤クラス
 phina.define('Board', {
-    superClass:  'DisplayElement',
-    init: function (x,y) {
-        this.superInit({
-            x: x,
-            y: y,
-        });
+    superClass: 'DisplayElement',
+    init: function () {
+        this.superInit();
         const boardGridX = Grid({
-            width: GRID_SIZE * CELL_NUM_X,
-            columns: CELL_NUM_X,
+            width: conf.GRID_SIZE * conf.CELL_NUM_X,
+            columns: conf.CELL_NUM_X,
             offset: 0,
         });
         const boardGridY = Grid({
-            width: GRID_SIZE * CELL_NUM_Y,
-            columns: CELL_NUM_Y,
+            width: conf.GRID_SIZE * conf.CELL_NUM_Y,
+            columns: conf.CELL_NUM_Y,
             offset: 0,
         });
-        (CELL_NUM_X).times((spanX) => {
-            (CELL_NUM_Y).times((spanY) => {
+        (conf.CELL_NUM_X).times((spanX) => {
+            (conf.CELL_NUM_Y).times((spanY) => {
                 let isTop, isBottom, isLeft, isRight;
                 // X軸方向の通路
                 if (spanX == 0) {
                     isLeft = false;
                     isRight = true;
-                }else if (spanX == CELL_NUM_X - 1) {
+                } else if (spanX == conf.CELL_NUM_X - 1) {
                     isLeft = true;
                     isRight = false;
-                }else {
+                } else {
                     isLeft = true;
                     isRight = true;
                 }
@@ -277,10 +292,10 @@ phina.define('Board', {
                 if (spanY == 0) {
                     isTop = false;
                     isBottom = true;
-                }else if (spanY == CELL_NUM_Y - 1) {
+                } else if (spanY == conf.CELL_NUM_Y - 1) {
                     isTop = true;
                     isBottom = false;
-                }else {
+                } else {
                     isTop = true;
                     isBottom = true;
                 }
@@ -298,14 +313,12 @@ phina.define('Board', {
 // 通路クラス
 phina.define('Aisle', {
     superClass: 'RectangleShape',
-    init: function (x, y, angle) {
+    init: function (angle) {
         this.superInit({
-            width: WALL_WIDTH + 1,// +1しないとstroke: falseしても謎の枠が出る
-            height: CELL_SIZE / 2, //道幅
-            fill: CELL_COLOR,
+            width: conf.WALL_WIDTH + 1,// +1しないとstroke: falseしても謎の枠が出る
+            height: conf.CELL_SIZE / 2, //道幅
+            fill: conf.CELL_COLOR,
             stroke: false,
-            x: x,
-            y: y,
             rotation: angle,
         });
     },
@@ -316,26 +329,26 @@ phina.define('Cell', {
     superClass: 'RectangleShape',
     init: function (isTop, isBottom, isLeft, isRight) {
         this.superInit({
-            width: CELL_SIZE,
-            height: CELL_SIZE,
-            fill: CELL_COLOR,
-            stroke: WALL_COLOR,
-            strokeWidth: WALL_WIDTH,
+            width: conf.CELL_SIZE,
+            height: conf.CELL_SIZE,
+            fill: conf.CELL_COLOR,
+            stroke: conf.WALL_COLOR,
+            strokeWidth: conf.WALL_WIDTH,
         });
-        if (isTop) Aisle(0, -CELL_SIZE / 2, 90).addChildTo(this);
-        if (isBottom) Aisle(0, +CELL_SIZE / 2, 90).addChildTo(this);
-        if (isLeft) Aisle(-CELL_SIZE / 2, 0, 0).addChildTo(this);
-        if (isRight) Aisle(+CELL_SIZE / 2, 0, 0).addChildTo(this);
+        if (isTop) Aisle(90).addChildTo(this).setPosition(0, -conf.CELL_SIZE / 2);
+        if (isBottom) Aisle(90).addChildTo(this).setPosition(0, conf.CELL_SIZE / 2);
+        if (isLeft) Aisle(0).addChildTo(this).setPosition(-conf.CELL_SIZE / 2, 0);
+        if (isRight) Aisle(0).addChildTo(this).setPosition(conf.CELL_SIZE / 2, 0);
     },
 });
 
 // メイン処理
-phina.main(()=> {
+phina.main(() => {
     // アプリケーション生成
     const app = GameApp({
         startLabel: 'startScene', // メインシーンから開始する
-        width: SCREEN_WIDTH,
-        height: SCREEN_HEIGHT,
+        width: conf.SCREEN_WIDTH,
+        height: conf.SCREEN_HEIGHT,
         // シーンのリストを引数で渡す
         scenes: [
             {
@@ -357,6 +370,13 @@ phina.main(()=> {
     // アプリケーション実行
     app.run();
 });
+
+const wait = (sec) => {
+    return new Promise((resolve, reject) => {
+        setTimeout(resolve, sec * 1000);
+        //setTimeout(() => {reject(new Error("エラー！"))}, sec*1000);
+    });
+};
 
 window.onbeforeunload = (e) => {
     e.preventDefault();// Cancel the event as stated by the standard.

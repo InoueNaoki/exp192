@@ -15,12 +15,15 @@ CREATE TABLE
 IF NOT EXISTS players
 (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    cookie_id VARCHAR(20) NOT NULL UNIQUE, 
-    current_socket_id VARCHAR(20) DEFAULT NULL UNIQUE,
+    user_id VARCHAR
+(20) NOT NULL UNIQUE, 
+    current_socket_id VARCHAR
+(20) DEFAULT NULL UNIQUE,
     sex TINYINT DEFAULT 0, -- 1=male,2=female
     age TINYINT UNSIGNED DEFAULT 255,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON
+UPDATE CURRENT_TIMESTAMP
 )
 ENGINE = InnoDB 
 DEFAULT CHARSET = utf8 
@@ -35,17 +38,24 @@ IF NOT EXISTS pairs
         host_id VARCHAR(20) DEFAULT NULL,
         guest_id VARCHAR(20) DEFAULT NULL,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON
+UPDATE CURRENT_TIMESTAMP,
         CONSTRAINT fk_host_id
-                FOREIGN KEY(host_id) 
-                REFERENCES players(current_socket_id)
-                ON DELETE RESTRICT
-                ON UPDATE CASCADE,
+FOREIGN KEY
+(host_id) 
+                REFERENCES players
+(current_socket_id)
+                ON
+DELETE RESTRICT
+                ON
+UPDATE CASCADE,
         CONSTRAINT fk_guest_id
                 FOREIGN KEY(guest_id) 
                 REFERENCES players(current_socket_id)
-                ON DELETE RESTRICT
-                ON UPDATE CASCADE
+                ON
+DELETE RESTRICT
+                ON
+UPDATE CASCADE
 )
 ENGINE = InnoDB
 DEFAULT CHARSET = utf8 

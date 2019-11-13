@@ -28,13 +28,7 @@ const io = require('socket.io')(http);
 
 const LOBBY_NAME = conf.lobbyName;
 
-/**
- * ペア(部屋)名=socketioのルームid
- * @type {String}
- */
-let pairId;
-
-let isHost;
+// const lobbyConnected = io.sockets.adapter.rooms[LOBBY_NAME];//ここにオブジェクト形式で接続中の"すべての"クライアントの情報入ってる
 
 /*　mysql初期設定　*/
 const mysql = require('mysql');
@@ -50,16 +44,19 @@ app.get('/game.js', (req, res)=> {
 
 /* socket.io接続 */
 io.on('connection', (socket) => {
+    let pairId;
     const currentSocketId = socket.id;
-    const cookieId = currentSocketId;　//現時点ではソケットIDで代用，いずれはCookieかユーザー記入式のIDで対応
+    const userId = currentSocketId;　//現時点ではソケットIDで代用，いずれはCookieかユーザー記入式のIDで対応
     logger.info('[socket.io]' + currentSocketId + ' connected successfully');
+    socket.emit('initial setting', conf.client);
     
     /* マッチメイキング　*/
     socket.on('join lobby', async () => {
         socket.join(LOBBY_NAME); // 待機ロビーに入室
         logger.info('[socket.io]' + currentSocketId + ' joined lobby');
+        
 
-        const createPlayerRecord = await sqlQuery(`INSERT INTO players(cookie_id,current_socket_id) VALUES ("${cookieId}","${currentSocketId}");`);
+        const createPlayerRecord = await sqlQuery(`INSERT INTO players(user_id,current_socket_id) VALUES ("${userId}","${currentSocketId}");`);
         const playerId = createPlayerRecord['insertId'];
 
         const selectMinId = await sqlQuery(`SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;`);
@@ -70,20 +67,16 @@ io.on('connection', (socket) => {
             pairId = createPairRecord['insertId'];
             console.log(playerId+' is host of room'+pairId);
             isHost = true;
+            socket.join(pairId);
         } else {
             await sqlQuery(`UPDATE pairs SET guest_id = "${currentSocketId}" WHERE id = "${mostWaitingPairId}";`);
             pairId = mostWaitingPairId;
             console.log(playerId + ' is guest of room' + pairId);
             isHost = false;
+            await socket.join(pairId);
+            socket.emit('complete matchmake', pairId);//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
+            socket.broadcast.to(pairId).emit('complete matchmake', pairId);//ホストクライアントにもマッチング完了を伝える
         }
-        // const lobbyConnected = io.sockets.adapter.rooms[LOBBY_NAME];//ここにオブジェクト形式で接続中の"すべての"クライアントの情報入ってる
-        // roomId = 'room' + (Math.ceil(lobbyConnected.length / 2) - 1);
-        // await async function(){
-        //     console.log('ここにいる');
-
-        socket.join(pairId);
-        io.emit('join room', pairId);
-        // }
     });
 
     /* メッセージ送信　*/
@@ -127,6 +120,7 @@ http.listen(port, ip, () => {
 //     });
 // }
 
+
 /**
  * MySQLにSQL文を投げる関数
  * @param {String} sqlStatement SQL文 
@@ -143,6 +137,10 @@ async function sqlQuery(sqlStatement) {
     } catch (err) {
         throw logger.error(err);
     }
+}
+
+function getPairId(currentSocketId) {
+    sqlQuery()
 }
 
 // const seq = [...Array(result.length)].map((_, i) => i); //pythonでいうrange(result.length)
