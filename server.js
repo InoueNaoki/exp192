@@ -74,8 +74,9 @@ io.on('connection', (socket) => {
             console.log(playerId + ' is guest of room' + pairId);
             isHost = false;
             await socket.join(pairId);
-            socket.emit('complete matchmake', pairId);//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
-            socket.broadcast.to(pairId).emit('complete matchmake', pairId);//ホストクライアントにもマッチング完了を伝える
+            const initPosi = createInitPosi(conf.client.CELL_NUM_X * conf.client.CELL_NUM_Y, 3);
+            socket.emit('complete matchmake', pairId, initPosi);//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
+            socket.broadcast.to(pairId).emit('complete matchmake', pairId, initPosi);//ホストクライアントにもマッチング完了を伝える
         }
     });
 
@@ -137,6 +138,15 @@ async function sqlQuery(sqlStatement) {
     } catch (err) {
         throw logger.error(err);
     }
+}
+
+function createInitPosi(cellNum,objNum) {
+    const seq = [...Array(cellNum).keys()];
+    for (let i = cellNum - 1; i >= 0; i--) {
+        const rand = Math.floor(Math.random() * (i + 1)); // 0~iのランダムな数値を取得
+        [seq[i], seq[rand]] = [seq[rand], seq[i]] // 配列の数値を入れ替える
+    }
+    return seq.slice(0, objNum);
 }
 
 function getPairId(currentSocketId) {
