@@ -26,8 +26,6 @@ logger.level = 'trace';
 /* socket.io初期設定 */
 const io = require('socket.io')(http);
 
-const LOBBY_NAME = conf.lobbyName;
-
 // const lobbyConnected = io.sockets.adapter.rooms[LOBBY_NAME];//ここにオブジェクト形式で接続中の"すべての"クライアントの情報入ってる
 
 /*　mysql初期設定　*/
@@ -45,36 +43,41 @@ app.get('/game.js', (req, res)=> {
 /* socket.io接続 */
 io.on('connection', (socket) => {
     let pairId;
-    const currentSocketId = socket.id;
-    const userId = currentSocketId;　//現時点ではソケットIDで代用，いずれはCookieかユーザー記入式のIDで対応
-    logger.info('[socket.io]' + currentSocketId + ' connected successfully');
+    const userId = socket.id;　//現時点ではソケットIDで代用，いずれはCookieかユーザー記入式のIDで対応
+    // socket.id = 'testtesttest';でID変更可能
+    logger.info('[socket.io]' + socket.id + ' connected successfully');
     socket.emit('initial setting', conf.client);
     
     /* マッチメイキング　*/
     socket.on('join lobby', async () => {
-        socket.join(LOBBY_NAME); // 待機ロビーに入室
-        logger.info('[socket.io]' + currentSocketId + ' joined lobby');
-        
+        socket.join(conf.LOBBY_NAME); // 待機ロビーに入室
+        logger.info('[socket.io]' + socket.id + ' joined lobby');
 
-        const createPlayerRecord = await sqlQuery(`INSERT INTO players(user_id,current_socket_id) VALUES ("${userId}","${currentSocketId}");`);
+        const createPlayerRecord = await sqlQuery(`INSERT INTO players(user_id,socket_id) VALUES ("${userId}","${socket.id}");`);
         const playerId = createPlayerRecord['insertId'];
 
         const selectMinId = await sqlQuery(`SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;`);
         const mostWaitingPairId = selectMinId[0]['MIN(id)'];
 
         if (!mostWaitingPairId) { 
-            const createPairRecord = await sqlQuery(`INSERT INTO pairs(host_id) VALUES ("${currentSocketId}");`);
+            // await sqlQuery(`INSERT INTO pairs(host_id) VALUES ("${currentsocket.id}");`);
+            const createPairRecord = await sqlQuery(`INSERT INTO pairs(host_id) VALUES ("${socket.id}");`);
             pairId = createPairRecord['insertId'];
             console.log(playerId+' is host of room'+pairId);
             isHost = true;
             socket.join(pairId);
+            socket.leave(conf.LOBBY_NAME);
         } else {
-            await sqlQuery(`UPDATE pairs SET guest_id = "${currentSocketId}" WHERE id = "${mostWaitingPairId}";`);
+            await sqlQuery(`UPDATE pairs SET guest_id = "${socket.id}" WHERE id = "${mostWaitingPairId}";`);
             pairId = mostWaitingPairId;
             console.log(playerId + ' is guest of room' + pairId);
             isHost = false;
-            await socket.join(pairId);
-            const initPosi = createInitPosi(conf.client.CELL_NUM_X * conf.client.CELL_NUM_Y, 3);
+            socket.join(pairId);
+            socket.leave(conf.LOBBY_NAME);
+            const objNum = 3;
+            const initPosi = createInitPosi(9, objNum);
+            // console.log(initPosi);
+            // console.log(getVisibleArr(initPosi, true));
             socket.emit('complete matchmake', pairId, initPosi);//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
             socket.broadcast.to(pairId).emit('complete matchmake', pairId, initPosi);//ホストクライアントにもマッチング完了を伝える
         }
@@ -83,15 +86,15 @@ io.on('connection', (socket) => {
     /* メッセージ送信　*/
     socket.on('send message', (msg) => {
         socket.broadcast.to(pairId).emit('new message', msg);
-        logger.debug(currentSocketId+'send msg to '+pairId+': ' + msg);
+        logger.debug(socket.id+'send msg to '+pairId+': ' + msg);
     });
 
     /* ソケット切断時の処理 */
     socket.on('disconnect', () => {
-        logger.info('[socket.io]' + currentSocketId + ' disconnected');
+        logger.info('[socket.io]' + socket.id + ' disconnected');
         // const columnName = isHost ? 'host_id' : 'guest_id';
         // sqlQuery(`UPDATE pairs SET ${columnName} = NULL WHERE id = ${pairId};`);
-        // これだとpairIdやcurrentSocketIdが最後に通信を始めたプレーヤーのものになってしまう
+        // これだとpairIdやcurrentsocket.idが最後に通信を始めたプレーヤーのものになってしまう
     });
 });
 
@@ -140,18 +143,80 @@ async function sqlQuery(sqlStatement) {
     }
 }
 
-function createInitPosi(cellNum,objNum) {
-    const seq = [...Array(cellNum).keys()];
-    for (let i = cellNum - 1; i >= 0; i--) {
-        const rand = Math.floor(Math.random() * (i + 1)); // 0~iのランダムな数値を取得
-        [seq[i], seq[rand]] = [seq[rand], seq[i]] // 配列の数値を入れ替える
-    }
+// const coordArr1d = [...Array(cellNum).keys()];
+
+// function getPairId(currentsocket.id) {
+//     sqlQuery()
+// }
+
+function createInitPosi(cellNum, objNum) {
+    let seq = [...Array(cellNum).keys()];
+    seq = shuffle(seq);
     return seq.slice(0, objNum);
 }
 
-function getPairId(currentSocketId) {
-    sqlQuery()
+// function convertFrom2dTo1d(x, y) {
+//     return conf.client.CELL_NUM_Y * y + x // ex.(0,0)–(2,2)→0–9
+// }
+
+function shuffle(arr) {
+    for (let i = arr.length - 1; i >= 0; i--) {
+        const rand = Math.floor(Math.random() * (i + 1)); // 0~iのランダムな数値を取得
+        [arr[i], arr[rand]] = [arr[rand], arr[i]] // 配列の数値を入れ替える
+    }
+    return arr;
 }
 
-// const seq = [...Array(result.length)].map((_, i) => i); //pythonでいうrange(result.length)
-// const result_arr = seq.map(i => result[i][column]); //複数列返り値があるとうまくいかない
+// function create2dCoordArr(numX, numY) {
+//     let coordArr = [];
+//     [...Array(numX)].forEach((_, x) => {
+//         [...Array(numY)].forEach((_, y) => {
+//             coordArr.push([x, y]);
+//         })
+//     });
+//     return coordArr;
+// }
+function isSameCel(fromCoord, toCoord) {
+    if (fromCoord === toCoord) return true;
+    else return false;
+}
+function isAdjacentCel(fromCoord, toCoord) {
+    switch (fromCoord % conf.CELL_NUM_X) {
+        case 0: //左端の列
+            if (fromCoord + 1 === toCoord) return true; //左端の列で右にtoCoordがあるとき
+        case conf.CELL_NUM_X - 1: //右端の列
+            if (fromCoord - 1 === toCoord) return true; //右端の列で左にtoCoordがあるとき
+        default: //端ではない列
+            const absDiff = Math.abs(fromCoord - toCoord);
+            if (absDiff === 3) return true; //Y軸方向に隣接してるとき
+            if (absDiff === 1) return true; //他の列でX軸方向に隣接してるとき
+            return false;
+    }
+}
+
+// function isAdjacent2d(from2d, to2d) {
+//     //Y軸方向に隣接(or一致)
+//     if (from2d[1] === to2d[1] && Math.abs(from2d[0] - to2d[0]) <= 1) {
+//         return true;
+//     }
+//     //X軸方向に隣接(or一致)
+//     else if (from2d[0] === to2d[0] && Math.abs(from2d[1] - to2d[1]) <= 1) {
+//         return true;
+//     } else {
+//         return false;
+//     }
+// }
+
+function getVisibleArr(posiArr, isHost) {
+    // let reward = posiArr[0];
+    // let host = posiArr[1];
+    // let guest = posiArr[2];
+    // if (isHost) {
+    //     reward = isAdjacent(host, reward) ? reward : false;
+    //     guest = isAdjacent(host, guest) ? guest : false;
+    // } else {
+    //     reward = isAdjacent(guest, reward) ? reward : false;
+    //     host = isAdjacent(guest, host) ? host : false;
+    // }
+    // return [reward, host, guest];
+}

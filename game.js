@@ -10,10 +10,10 @@ if (UAParser().browser.name !== 'Chrome') {
     location.replace('http://Google.com');//戻るURL指定
 }
 
-window.onbeforeunload = (e) => {
-    e.preventDefault();// Cancel the event as stated by the standard.
-    e.returnValue = '';// Chrome requires returnValue to be set.
-}
+// window.onbeforeunload = (e) => {
+//     e.preventDefault();// Cancel the event as stated by the standard.
+//     e.returnValue = '';// Chrome requires returnValue to be set.
+// }
 
 // phina.js をグローバル領域に展開
 phina.globalize();
@@ -76,6 +76,7 @@ socket.on('initial setting', (initSetting) => {
                 label.fill = 'seagreen';
                 loading.remove();
                 await wait(1);
+                console.log({ initPosi: initPosi });
                 self.exit({ initPosi: initPosi, });// to MainScene
             });
         },
@@ -288,14 +289,13 @@ socket.on('initial setting', (initSetting) => {
                         isTop = true;
                         isBottom = true;
                     }
-                    const coord = convertFrom2dTo1d(spanX, spanY);
                     const cell = Cell(isTop, isBottom, isLeft, isRight).addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                     cell.setInteractive(true);
                     cell.onpointstart = () => {
-                        console.log('clicked(' + coord + ')');
+                        console.log('clicked(' + spanX +',' +spanY+')'+this);
                     };
+                    const coord = convertFrom2dTo1d(spanX, spanY);
                     const self = this;
-                    console.log(coord);
                     switch (coord) {
                         case initPosi[0]:
                             StarShape({ radius: conf.CELL_SIZE * 0.4, stroke: false, fill:'gold'}).addChildTo(self).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
