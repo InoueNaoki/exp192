@@ -1,0 +1,24 @@
+{
+    "BACKGROUND_COLOR": "white",
+    "CELL_COLOR": "white",
+    "SCREEN_WIDTH": 1920,
+    "SCREEN_HEIGHT": 1080,
+    "MSG_FRAME_SIZE": 150,
+    "FONT_COLOR": "black",
+    "SHAPE_COLOR": "black",
+    "FONT_SIZE": 48,
+    "CELL_NUM_X": 3,
+    "CELL_NUM_Y": 3,
+    "GRID_SIZE": 200,
+    "CELL_SIZE": 200,
+    "WALL_WIDTH": 10,
+    "WALL_COLOR": "black",
+    "MATCHMAKING_MSG": "マッチング中......\nブラウザを閉じないでください",
+    "COMPLETE_MATCHMAKE_MSG": "マッチング成立！\nしばらくこのままお待ち下さい",
+    "SHAPE_LIST": [
+        { "id": 0, "shape": "circle"},
+        { "id": 1, "shape": "triangle"},
+        { "id": 2, "shape": "square"},
+        { "id": 3, "shape": "hexagon"}
+    ]
+}

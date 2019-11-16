@@ -1,6 +1,7 @@
 const conf = require('config');
 /* express初期設定 */
-const app = require('express')();
+const express = require('express');
+const app = express();
 const http = require('http').createServer(app);
 const port = process.env.PORT || 3000;
 const ip = '127.0.0.1';
@@ -40,13 +41,14 @@ app.get('/game.js', (req, res)=> {
     res.sendFile(__dirname + '/game.js');
 });
 
+app.use(express.static('public'));
+
 /* socket.io接続 */
 io.on('connection', (socket) => {
     let pairId;
     const userId = socket.id;　//現時点ではソケットIDで代用，いずれはCookieかユーザー記入式のIDで対応
     // socket.id = 'testtesttest';でID変更可能
     logger.info('[socket.io]' + socket.id + ' connected successfully');
-    socket.emit('initial setting', conf.client);
     
     /* マッチメイキング　*/
     socket.on('join lobby', async () => {
@@ -103,27 +105,6 @@ http.listen(port, ip, () => {
     logger.info('[nodejs]ip:' + ip);
 });
 
-// /**
-//  * クエリ実行結果を返すためのコールバック（returnが使えなかったので）
-//  * @callback queryExecutionResult
-//  * @param {Object} result オブジェクト形式のSQLクエリ実行結果
-//  */
-// /**
-//  * MySQLにクエリを投げるための関数
-//  * @param {String} sqlStatement SQLのクエリ文
-//  * @param {queryExecutionResult} callback 実行結果のコールバック
-//  */
-// function sqlQuery(sqlStatement, callback = () => { }) {//callbackがいらないときデフォルト値として何もしない
-//     logger.trace('[mysql]' + sqlStatement);//投げられたクエリ分をトレース
-//     connection.query(sqlStatement, (err, result) => {
-//         if (err) logger.error(err);
-//         else {
-//             logger.trace('[mysql]' + JSON.stringify(result)); //そのまま連結すると中身が見れなくなるのでJSON.stringify()を使用
-//             callback(result);//resultはオブジェクト形式
-//         }
-//     });
-// }
-
 
 /**
  * MySQLにSQL文を投げる関数
@@ -143,8 +124,6 @@ async function sqlQuery(sqlStatement) {
     }
 }
 
-// const coordArr1d = [...Array(cellNum).keys()];
-
 // function getPairId(currentsocket.id) {
 //     sqlQuery()
 // }
@@ -154,10 +133,6 @@ function createInitPosi(cellNum, objNum) {
     seq = shuffle(seq);
     return seq.slice(0, objNum);
 }
-
-// function convertFrom2dTo1d(x, y) {
-//     return conf.client.CELL_NUM_Y * y + x // ex.(0,0)–(2,2)→0–9
-// }
 
 function shuffle(arr) {
     for (let i = arr.length - 1; i >= 0; i--) {

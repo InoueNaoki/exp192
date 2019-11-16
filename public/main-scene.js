@@ -1,87 +1,4 @@
-//モバイルからアクセスがあった場合アクセス拒否
-if (UAParser().device.type === 'mobile') {
-    alert('PCからアクセスしてください');
-    location.replace('http://Google.com');//戻るURL指定
-}
-
-// Chrome以外から閲覧されている場合アクセス拒否
-if (UAParser().browser.name !== 'Chrome') {
-    alert('ブラウザをChromeに変更してください');
-    location.replace('http://Google.com');//戻るURL指定
-}
-
-// window.onbeforeunload = (e) => {
-//     e.preventDefault();// Cancel the event as stated by the standard.
-//     e.returnValue = '';// Chrome requires returnValue to be set.
-// }
-
-// phina.js をグローバル領域に展開
-phina.globalize();
-
-const socket = io();
-let playerId;
-socket.on('connect', () => {
-    playerId = socket.id;
-    console.log('You are '+playerId);
-});
-
-// let conf;
-socket.on('initial setting', (initSetting) => {
-    const conf = initSetting;
-    let currentShapeIndex = 0;
-    // const initialPosition = [].range(conf.CELL_NUM_X * conf.CELL_NUM_Y).shuffle().slice(-3); //0=player1,1=player2,3=reward
-    const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル
-
-    phina.define('StartScene', {
-        // 継承
-        superClass: 'DisplayScene',
-        // 初期化
-        init: function (option) {
-            // 親クラス初期化
-            this.superInit(option);
-            // 背景色
-            this.backgroundColor = conf.BACKGROUND_COLOR;
-            Label({
-                text: '指示があるまで始めないでください',
-                fontSize: conf.FONT_SIZE,
-            }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-1));
-            const startBtn = Button({
-                text: 'START',
-                fontSize: conf.FONT_SIZE,
-            }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(1));
-            const self = this;
-            startBtn.onpointstart = () => {
-                self.exit();//to MatchmakingScene
-            };
-        },
-    });
-
-    phina.define('MatchmakingScene', {
-        superClass: 'DisplayScene',
-        init: function (option) {
-            // 親クラス初期化
-            this.superInit(option);
-            this.backgroundColor = conf.BACKGROUND_COLOR;
-            const label = Label({
-                text: 'マッチング中......\nブラウザを閉じないでください',
-                fontSize: conf.FONT_SIZE,
-            }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-1));
-            // label.tweener.wait(1000).fadeOut(1000).wait(500).fadeIn(1000).setLoop(true).play(); //呼吸アニメーション
-            const loading = Loading(8).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(+1));
-            const self = this;
-            socket.emit('join lobby');
-            socket.on('complete matchmake', async (pairId, initPosi) => {
-                console.log(pairId + 'のマッチングが完了');
-                label.text = conf.COMPLETE_MATCHMAKE_MSG;
-                label.fill = 'seagreen';
-                loading.remove();
-                await wait(1);
-                console.log({ initPosi: initPosi });
-                self.exit({ initPosi: initPosi, });// to MainScene
-            });
-        },
-    });
-
+export default function () {
     // MainScene クラスを定義
     phina.define('MainScene', {
         superClass: 'DisplayScene',
@@ -89,30 +6,10 @@ socket.on('initial setting', (initSetting) => {
             this.superInit(option);
             this.backgroundColor = conf.BACKGROUND_COLOR;// 背景色を指定
             Timer().addChildTo(this).setPosition(150, 50);
-            Submit().addChildTo(this).setPosition(200,100);
+            Submit().addChildTo(this).setPosition(200, 100);
             MsgFrame(true).addChildTo(this).setPosition(200, 200);
             MsgFrame(false).addChildTo(this).setPosition(400, 200);
             Board(option.initPosi).addChildTo(this).setPosition(500, 500);
-        },
-    });
-
-    phina.define('Loading', {
-        superClass: 'DisplayElement',
-        init: function (circleNum) {
-            this.superInit();
-            const firstDeg = 360 / circleNum;
-            const self = this;
-            Array.range(0, 360, firstDeg).each((deg) => {
-                const rad = Math.degToRad(deg); // 度をラジアンに変換
-                const circle = CircleShape({ radius: conf.FONT_SIZE / 5, fill: conf.FONT_COLOR, }).addChildTo(self);
-                circle.alpha = (deg + firstDeg) / 360;
-                // 円周上に配置
-                circle.x = Math.cos(rad) * 40;
-                circle.y = Math.sin(rad) * 40;
-            });
-        },
-        update: function () {
-            this.rotation += 8;
         },
     });
 
@@ -237,18 +134,6 @@ socket.on('initial setting', (initSetting) => {
         },
     });
 
-    phina.define('Player', {
-        superClass: 'CircleShape',
-        init: function (isSelf) {
-            const playerColor = isSelf ? 'skyblue' : 'orange';
-            this.superInit({
-                radius: conf.CELL_SIZE / 2 * 0.5,
-                fill: playerColor,
-                strokeWidth: false,
-            });
-        },
-    });
-
     // ゲーム盤クラス
     phina.define('Board', {
         superClass: 'DisplayElement',
@@ -292,13 +177,13 @@ socket.on('initial setting', (initSetting) => {
                     const cell = Cell(isTop, isBottom, isLeft, isRight).addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                     cell.setInteractive(true);
                     cell.onpointstart = () => {
-                        console.log('clicked(' + spanX +',' +spanY+')'+this);
+                        console.log('clicked(' + spanX + ',' + spanY + ')' + this);
                     };
                     const coord = convertFrom2dTo1d(spanX, spanY);
                     const self = this;
                     switch (coord) {
                         case initPosi[0]:
-                            StarShape({ radius: conf.CELL_SIZE * 0.4, stroke: false, fill:'gold'}).addChildTo(self).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
+                            StarShape({ radius: conf.CELL_SIZE * 0.4, stroke: false, fill: 'gold' }).addChildTo(self).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                             break;
                         case initPosi[1]:
                             Player(true).addChildTo(self).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
@@ -306,7 +191,7 @@ socket.on('initial setting', (initSetting) => {
                         case initPosi[2]:
                             Player(false).addChildTo(self).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                             break;
-                        default :
+                        default:
                             break;
                     }
                     // cell.fill = 'linen';
@@ -347,56 +232,15 @@ socket.on('initial setting', (initSetting) => {
         },
     });
 
-    // メイン処理
-    phina.main(() => {
-        // アプリケーション生成
-        const app = GameApp({
-            startLabel: 'startScene', // メインシーンから開始する
-            width: conf.SCREEN_WIDTH,
-            height: conf.SCREEN_HEIGHT,
-            // シーンのリストを引数で渡す
-            scenes: [
-                {
-                    className: 'StartScene',
-                    label: 'startScene',
-                    nextLabel: 'matchmakingScene',
-                },
-                {
-                    className: 'MatchmakingScene',
-                    label: 'matchmakingScene',
-                    nextLabel: 'mainScene',
-                },
-                {
-                    className: 'MainScene',
-                    label: 'mainScene',
-                },
-            ],
-        });
-        // アプリケーション実行
-        app.run();
+    phina.define('Player', {
+        superClass: 'CircleShape',
+        init: function (isSelf) {
+            const playerColor = isSelf ? 'skyblue' : 'orange';
+            this.superInit({
+                radius: conf.CELL_SIZE / 2 * 0.5,
+                fill: playerColor,
+                strokeWidth: false,
+            });
+        },
     });
-    function wait(sec) {
-        return new Promise((resolve, reject) => {
-            setTimeout(resolve, sec * 1000);
-            //setTimeout(() => {reject(new Error("エラー！"))}, sec*1000);
-        });
-    };
-
-    function convertFrom2dTo1d(x, y) {
-        return conf.CELL_NUM_Y * y + x // ex.(0,0)–(2,2)→0–9
-    }
-});
-// const SCREEN_WIDTH = 1920; // 画面横サイズ
-// const SCREEN_HEIGHT = 1080; // 画面縦サイズ
-// const MSG_FRAME_SIZE = 150;
-// const BACKGROUND_COLOR = 'white';
-// const FONT_COLOR = 'black';
-// const SHAPE_COLOR = 'black';
-// const FONT_SIZE = 48;
-// const CELL_NUM_X = 3; // 小部屋（マス目）のX軸方向の数
-// const CELL_NUM_Y = 3; // 小部屋（マス目）のY軸方向の数
-// const GRID_SIZE = 200; // グリッドのサイズ
-// const CELL_SIZE = conf.GRID_SIZE; // パネルの大きさ
-// const WALL_WIDTH = 10;
-// const CELL_COLOR = BACKGROUND_COLOR;
-// const zWALL_COLOR = 'black';
+}
