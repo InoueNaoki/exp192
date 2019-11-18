@@ -1,11 +1,13 @@
-const conf = require('config');
 /* express初期設定 */
-const app = require('express')();
+const express = require('express');
+const app = express();
 const http = require('http').createServer(app);
 const port = process.env.PORT || 3000;
 const ip = '127.0.0.1';
-
 const util = require('util');
+const conf = require('config'); //サーバーサイド設定ファイル
+/* ファイル読み込み */
+app.use(express.static('public')); //クライアントサイド
 
 /* log4js初期設定 */
 const log4js = require('log4js')
@@ -32,13 +34,7 @@ const io = require('socket.io')(http);
 const mysql = require('mysql');
 const dbConfig = conf.mysql;
 
-/* ファイル読み込み */
-app.get('/', (req, res)=> {
-    res.sendFile(__dirname + '/client.html');
-});
-app.get('/game.js', (req, res)=> {
-    res.sendFile(__dirname + '/game.js');
-});
+const CELL_NUM = 9;
 
 /* socket.io接続 */
 io.on('connection', (socket) => {
@@ -46,29 +42,30 @@ io.on('connection', (socket) => {
     const userId = socket.id;　//現時点ではソケットIDで代用，いずれはCookieかユーザー記入式のIDで対応
     // socket.id = 'testtesttest';でID変更可能
     logger.info('[socket.io]' + socket.id + ' connected successfully');
-    socket.emit('initial setting', conf.client);
     
     /* マッチメイキング　*/
     socket.on('join lobby', async () => {
         socket.join(conf.LOBBY_NAME); // 待機ロビーに入室
         logger.info('[socket.io]' + socket.id + ' joined lobby');
-
-        const createPlayerRecord = await sqlQuery(`INSERT INTO players(user_id,socket_id) VALUES ("${userId}","${socket.id}");`);
+        const createPlayerRecord = await sqlQuery(`INSERT INTO players SET user_id = "${userId}", socket_id = "${socket.id}";`);
         const playerId = createPlayerRecord['insertId'];
 
         const selectMinId = await sqlQuery(`SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;`);
         const mostWaitingPairId = selectMinId[0]['MIN(id)'];
 
         if (!mostWaitingPairId) { 
-            // await sqlQuery(`INSERT INTO pairs(host_id) VALUES ("${currentsocket.id}");`);
-            const createPairRecord = await sqlQuery(`INSERT INTO pairs(host_id) VALUES ("${socket.id}");`);
+            // Host
+            const createPairRecord = await sqlQuery(`INSERT INTO pairs SET host_id = "${socket.id}";`);
+            await sqlQuery(`UPDATE players SET is_host = true WHERE socket_id = "${socket.id}";`);
             pairId = createPairRecord['insertId'];
             console.log(playerId+' is host of room'+pairId);
             isHost = true;
             socket.join(pairId);
             socket.leave(conf.LOBBY_NAME);
         } else {
+            // Guest
             await sqlQuery(`UPDATE pairs SET guest_id = "${socket.id}" WHERE id = "${mostWaitingPairId}";`);
+            await sqlQuery(`UPDATE players SET is_host = false WHERE socket_id = "${socket.id}";`);
             pairId = mostWaitingPairId;
             console.log(playerId + ' is guest of room' + pairId);
             isHost = false;
@@ -78,8 +75,8 @@ io.on('connection', (socket) => {
             const initPosi = createInitPosi(9, objNum);
             // console.log(initPosi);
             // console.log(getVisibleArr(initPosi, true));
-            socket.emit('complete matchmake', pairId, initPosi);//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
-            socket.broadcast.to(pairId).emit('complete matchmake', pairId, initPosi);//ホストクライアントにもマッチング完了を伝える
+            socket.emit('complete matchmake', pairId, getVisibleArr(initPosi, false));//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
+            socket.broadcast.to(pairId).emit('complete matchmake', pairId, getVisibleArr(initPosi, true));//ホスト(部屋全体)にもマッチング完了を伝える
         }
     });
 
@@ -103,28 +100,6 @@ http.listen(port, ip, () => {
     logger.info('[nodejs]ip:' + ip);
 });
 
-// /**
-//  * クエリ実行結果を返すためのコールバック（returnが使えなかったので）
-//  * @callback queryExecutionResult
-//  * @param {Object} result オブジェクト形式のSQLクエリ実行結果
-//  */
-// /**
-//  * MySQLにクエリを投げるための関数
-//  * @param {String} sqlStatement SQLのクエリ文
-//  * @param {queryExecutionResult} callback 実行結果のコールバック
-//  */
-// function sqlQuery(sqlStatement, callback = () => { }) {//callbackがいらないときデフォルト値として何もしない
-//     logger.trace('[mysql]' + sqlStatement);//投げられたクエリ分をトレース
-//     connection.query(sqlStatement, (err, result) => {
-//         if (err) logger.error(err);
-//         else {
-//             logger.trace('[mysql]' + JSON.stringify(result)); //そのまま連結すると中身が見れなくなるのでJSON.stringify()を使用
-//             callback(result);//resultはオブジェクト形式
-//         }
-//     });
-// }
-
-
 /**
  * MySQLにSQL文を投げる関数
  * @param {String} sqlStatement SQL文 
@@ -143,21 +118,15 @@ async function sqlQuery(sqlStatement) {
     }
 }
 
-// const coordArr1d = [...Array(cellNum).keys()];
-
-// function getPairId(currentsocket.id) {
-//     sqlQuery()
-// }
+function isHost() {
+    return sqlQuery.query(`SELECT is_host FROM players WHERE user_id = "${socket.id}" `)['is_host'];
+}
 
 function createInitPosi(cellNum, objNum) {
     let seq = [...Array(cellNum).keys()];
     seq = shuffle(seq);
     return seq.slice(0, objNum);
 }
-
-// function convertFrom2dTo1d(x, y) {
-//     return conf.client.CELL_NUM_Y * y + x // ex.(0,0)–(2,2)→0–9
-// }
 
 function shuffle(arr) {
     for (let i = arr.length - 1; i >= 0; i--) {
@@ -176,11 +145,11 @@ function shuffle(arr) {
 //     });
 //     return coordArr;
 // }
-function isSameCel(fromCoord, toCoord) {
+function isSameCell(fromCoord, toCoord) {
     if (fromCoord === toCoord) return true;
     else return false;
 }
-function isAdjacentCel(fromCoord, toCoord) {
+function isAdjacentCell(fromCoord, toCoord) {
     switch (fromCoord % conf.CELL_NUM_X) {
         case 0: //左端の列
             if (fromCoord + 1 === toCoord) return true; //左端の列で右にtoCoordがあるとき
@@ -194,29 +163,22 @@ function isAdjacentCel(fromCoord, toCoord) {
     }
 }
 
-// function isAdjacent2d(from2d, to2d) {
-//     //Y軸方向に隣接(or一致)
-//     if (from2d[1] === to2d[1] && Math.abs(from2d[0] - to2d[0]) <= 1) {
-//         return true;
-//     }
-//     //X軸方向に隣接(or一致)
-//     else if (from2d[0] === to2d[0] && Math.abs(from2d[1] - to2d[1]) <= 1) {
-//         return true;
-//     } else {
-//         return false;
-//     }
-// }
-
 function getVisibleArr(posiArr, isHost) {
-    // let reward = posiArr[0];
-    // let host = posiArr[1];
-    // let guest = posiArr[2];
-    // if (isHost) {
-    //     reward = isAdjacent(host, reward) ? reward : false;
-    //     guest = isAdjacent(host, guest) ? guest : false;
-    // } else {
-    //     reward = isAdjacent(guest, reward) ? reward : false;
-    //     host = isAdjacent(guest, host) ? host : false;
-    // }
-    // return [reward, host, guest];
+    let reward = posiArr[0];
+    let host = posiArr[1];
+    let guest = posiArr[2];
+    if (isHost) {
+        reward = isAdjacentCell(host, reward) || isSameCell(host, reward) ? reward : false;
+        guest = isAdjacentCell(host, guest) || isSameCell(host, guest) ? guest : false;
+    } else {
+        reward = isAdjacentCell(guest, reward) || isSameCell(guest, reward) ? reward : false;
+        host = isAdjacentCell(guest, host) || isSameCell(guest, host) ? host : false;
+    }
+    return [reward, host, guest];
+}
+
+function getMovableArr(currentPosi) {
+    return [...Array(CELL_NUM)].map((_, i) => {
+        return isAdjacentCell(currentPosi, i) || isSameCell(currentPosi, i) ? true : false
+    });
 }

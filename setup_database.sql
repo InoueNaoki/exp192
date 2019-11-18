@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS players(
     id INT unsigned auto_increment PRIMARY KEY,
     user_id VARCHAR(20) NOT NULL UNIQUE,
     socket_id VARCHAR(20) DEFAULT NULL UNIQUE,
-    is_Host BOOLEAN DEFAULT NULL,
+    is_host BOOLEAN DEFAULT NULL,
     is_male BOOLEAN DEFAULT NULL,
     age TINYINT unsigned DEFAULT 255,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
