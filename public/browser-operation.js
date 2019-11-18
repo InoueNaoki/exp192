@@ -1,4 +1,4 @@
-export default function (UAParser) {
+export default (UAParser)=>{
     //モバイルからアクセスがあった場合アクセス拒否
     if(UAParser().device.type === 'mobile') {
         alert('PCからアクセスしてください');

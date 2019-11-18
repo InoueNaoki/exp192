@@ -34,8 +34,6 @@ const io = require('socket.io')(http);
 const mysql = require('mysql');
 const dbConfig = conf.mysql;
 
-const CELL_NUM = 9;
-
 /* socket.io接続 */
 io.on('connection', (socket) => {
     let pairId;
@@ -147,16 +145,21 @@ function shuffle(arr) {
 // }
 function isSameCell(fromCoord, toCoord) {
     if (fromCoord === toCoord) return true;
-    else return false;
+    return false;
 }
 function isAdjacentCell(fromCoord, toCoord) {
+    const absDiff = Math.abs(fromCoord - toCoord);
     switch (fromCoord % conf.CELL_NUM_X) {
         case 0: //左端の列
             if (fromCoord + 1 === toCoord) return true; //左端の列で右にtoCoordがあるとき
+            if (absDiff === 3) return true; //Y軸方向に隣接してるとき
+            return false;
         case conf.CELL_NUM_X - 1: //右端の列
             if (fromCoord - 1 === toCoord) return true; //右端の列で左にtoCoordがあるとき
+            if (absDiff === 3) return true; //Y軸方向に隣接してるとき
+            return false;
+
         default: //端ではない列
-            const absDiff = Math.abs(fromCoord - toCoord);
             if (absDiff === 3) return true; //Y軸方向に隣接してるとき
             if (absDiff === 1) return true; //他の列でX軸方向に隣接してるとき
             return false;
@@ -171,6 +174,7 @@ function getVisibleArr(posiArr, isHost) {
         reward = isAdjacentCell(host, reward) || isSameCell(host, reward) ? reward : false;
         guest = isAdjacentCell(host, guest) || isSameCell(host, guest) ? guest : false;
     } else {
+        // ゲストのとき
         reward = isAdjacentCell(guest, reward) || isSameCell(guest, reward) ? reward : false;
         host = isAdjacentCell(guest, host) || isSameCell(guest, host) ? host : false;
     }
@@ -178,6 +182,7 @@ function getVisibleArr(posiArr, isHost) {
 }
 
 function getMovableArr(currentPosi) {
+    const CELL_NUM = conf.CELL_NUM_X * conf.CELL_NUM_Y;
     return [...Array(CELL_NUM)].map((_, i) => {
         return isAdjacentCell(currentPosi, i) || isSameCell(currentPosi, i) ? true : false
     });
