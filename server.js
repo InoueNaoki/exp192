@@ -69,12 +69,11 @@ io.on('connection', (socket) => {
             isHost = false;
             socket.join(pairId);
             socket.leave(conf.LOBBY_NAME);
-            const objNum = 3;
-            const initPosi = createInitPosi(9, objNum);
+            const initPosi = createInitPosiArr(9);
             // console.log(initPosi);
             // console.log(getVisibleArr(initPosi, true));
-            socket.emit('complete matchmake', pairId, getVisibleArr(initPosi, false));//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
-            socket.broadcast.to(pairId).emit('complete matchmake', pairId, getVisibleArr(initPosi, true));//ホスト(部屋全体)にもマッチング完了を伝える
+            socket.emit('complete matchmake', pairId, getVisibleArr(initPosi, false), getMovableArr(initPosi[2]));//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
+            socket.broadcast.to(pairId).emit('complete matchmake', pairId, getVisibleArr(initPosi, true), getMovableArr(initPosi[1]));//ホスト(部屋全体)にもマッチング完了を伝える
         }
     });
 
@@ -120,10 +119,12 @@ function isHost() {
     return sqlQuery.query(`SELECT is_host FROM players WHERE user_id = "${socket.id}" `)['is_host'];
 }
 
-function createInitPosi(cellNum, objNum) {
+function createInitPosiArr(cellNum) {
+    const objNum = 3;
     let seq = [...Array(cellNum).keys()];
-    seq = shuffle(seq);
-    return seq.slice(0, objNum);
+    const initPosi = shuffle(seq).slice(0, objNum);
+    // return [4, 5, 6];
+    return initPosi;
 }
 
 function shuffle(arr) {
@@ -145,45 +146,48 @@ function shuffle(arr) {
 // }
 function isSameCell(fromCoord, toCoord) {
     if (fromCoord === toCoord) return true;
-    return false;
+    else return false;
 }
 function isAdjacentCell(fromCoord, toCoord) {
     const absDiff = Math.abs(fromCoord - toCoord);
-    switch (fromCoord % conf.CELL_NUM_X) {
+    switch (fromCoord % 3) {
         case 0: //左端の列
             if (fromCoord + 1 === toCoord) return true; //左端の列で右にtoCoordがあるとき
-            if (absDiff === 3) return true; //Y軸方向に隣接してるとき
-            return false;
-        case conf.CELL_NUM_X - 1: //右端の列
+            else if (absDiff === 3) return true; //Y軸方向に隣接してるとき
+            else return false;
+        case 3 - 1: //右端の列
             if (fromCoord - 1 === toCoord) return true; //右端の列で左にtoCoordがあるとき
-            if (absDiff === 3) return true; //Y軸方向に隣接してるとき
-            return false;
+            else if (absDiff === 3) return true; //Y軸方向に隣接してるとき
+            else return false;
 
         default: //端ではない列
             if (absDiff === 3) return true; //Y軸方向に隣接してるとき
-            if (absDiff === 1) return true; //他の列でX軸方向に隣接してるとき
-            return false;
+            else if (absDiff === 1) return true; //他の列でX軸方向に隣接してるとき
+            else return false;
     }
 }
 
-function getVisibleArr(posiArr, isHost) {
-    let reward = posiArr[0];
-    let host = posiArr[1];
-    let guest = posiArr[2];
+function getVisibleArr(initPosiArr, isHost) {
+    const visibleArr = JSON.parse(JSON.stringify(initPosiArr));
+    let reward = visibleArr[0];
+    let host = visibleArr[1];
+    let guest = visibleArr[2];
     if (isHost) {
-        reward = isAdjacentCell(host, reward) || isSameCell(host, reward) ? reward : false;
-        guest = isAdjacentCell(host, guest) || isSameCell(host, guest) ? guest : false;
+        if (!(isAdjacentCell(host, reward) || isSameCell(host, reward))) reward = false;
+        if (!(isAdjacentCell(host, guest) || isSameCell(host, guest))) guest = false;
     } else {
         // ゲストのとき
-        reward = isAdjacentCell(guest, reward) || isSameCell(guest, reward) ? reward : false;
-        host = isAdjacentCell(guest, host) || isSameCell(guest, host) ? host : false;
+        if (!(isAdjacentCell(guest, reward) || isSameCell(guest, reward))) reward = false;
+        if (!(isAdjacentCell(guest, host) || isSameCell(guest, host))) host = false;
     }
     return [reward, host, guest];
 }
 
 function getMovableArr(currentPosi) {
-    const CELL_NUM = conf.CELL_NUM_X * conf.CELL_NUM_Y;
+    console.log('currentPosi' + currentPosi);
+    const CELL_NUM = 9;
     return [...Array(CELL_NUM)].map((_, i) => {
-        return isAdjacentCell(currentPosi, i) || isSameCell(currentPosi, i) ? true : false
+        const isMovable = isAdjacentCell(currentPosi, i) || isSameCell(currentPosi, i);
+        return isMovable;
     });
 }

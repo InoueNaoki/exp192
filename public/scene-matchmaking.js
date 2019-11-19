@@ -13,14 +13,15 @@ export default (phina, conf, socket)=> {
             const loading = Loading(8).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(+1));
             const self = this;
             socket.emit('join lobby');
-            socket.on('complete matchmake', async (pairId, initPosi) => {
+            socket.on('complete matchmake', async (pairId, initPosi,movable) => {
                 console.log(pairId + 'のマッチングが完了');
                 label.text = conf.COMPLETE_MATCHMAKE_MSG;
                 label.fill = 'seagreen';
                 loading.remove();
                 await wait(1);
                 console.log({ initPosi: initPosi });
-                self.exit({ initPosi: initPosi, });// to MainScene
+                console.log(movable);
+                self.exit({ initPosi: initPosi, movable: movable});// to MainScene
             });
         },
     });
