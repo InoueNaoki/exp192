@@ -1,5 +1,5 @@
 export default {
-    "BACKGROUND_COLOR": "white",
+    "BACKGROUND_COLOR": "gray",
     "CELL_COLOR": "white",
     "SCREEN_WIDTH": 1920,
     "SCREEN_HEIGHT": 1080,

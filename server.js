@@ -119,9 +119,10 @@ function isHost() {
     return sqlQuery.query(`SELECT is_host FROM players WHERE user_id = "${socket.id}" `)['is_host'];
 }
 
-function createInitPosiArr(cellNum) {
+function createInitPosiArr() {
+    const CELL_NUM = 9;
     const objNum = 3;
-    let seq = [...Array(cellNum).keys()];
+    let seq = [...Array(CELL_NUM).keys()];
     const initPosi = shuffle(seq).slice(0, objNum);
     // return [4, 5, 6];
     return initPosi;

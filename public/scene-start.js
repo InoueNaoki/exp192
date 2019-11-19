@@ -1,25 +1,25 @@
 export default (phina,conf)=> {
     phina.define('StartScene', {
-        // 継承
-        superClass: 'DisplayScene',
+        superClass: 'DisplayScene',// 継承
         // 初期化
         init: function (option) {
-            // 親クラス初期化
-            this.superInit(option);
-            // 背景色
-            this.backgroundColor = conf.BACKGROUND_COLOR;
+            this.superInit(option);// 親クラス初期化
+            this.backgroundColor = conf.BACKGROUND_COLOR;// 背景色
             Label({
                 text: '指示があるまで始めないでください',
                 fontSize: conf.FONT_SIZE,
-            }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-1));
-            const startBtn = Button({
+            })
+                .addChildTo(this)
+                .setPosition(this.gridX.center(), this.gridY.center(-1));
+            Button({
                 text: 'START',
                 fontSize: conf.FONT_SIZE,
-            }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(1));
-            const self = this;
-            startBtn.onpointstart = () => {
-                self.exit();//to MatchmakingScene
-            };
+            })
+                .addChildTo(this)
+                .setPosition(this.gridX.center(), this.gridY.center(1))
+                .onpointstart = () => {
+                    this.exit();//to MatchmakingScene
+                };
         },
     });
 }
