@@ -1,5 +1,9 @@
 phina.globalize();
 
+const option = {
+    height: 1080,
+    width: 1920,
+}
 /*
  * メイン処理
  */
@@ -7,65 +11,93 @@ phina.main(function () {
     const app = GameApp({
         height: 1080,
         width: 1920,
-        // fit: false,
         startLabel: "start",
         scenes: [
             {
                 label: "start",
                 className: "StartScene",
-                nextLabel: "matchmaking"
             },
             {
                 label: "matchmaking",
                 className: "MatchmakingScene",
-                nextLabel: "assignment"
+                nextLabel: "assignment",
+                arguments: { gameMode: 1 },
             },
             {
-                label: "assignment",
-                className: "AssignmentScene",
-                nextLabel: "messaging"
+                label: "experimentMode",
+                className: "ExperimentModeSequence",
+                nextLabel: "break",
             },
             {
-                label: "messaging",
-                className: "MessagingScene",
-                nextLabel: "shifting"
+                label: "break",
+                className: "BreakScene",
             },
             {
-                label: "shifting",
-                className: "ShiftingScene",
-                nextLabel: "assignment"
+                label: "questionnaire",
+                className: "QuestionnaireScene",
+                nextLabel: "thanks",
             },
             {
                 label: "thanks",
                 className: "ThanksScene",
-            },
-            {
-                label: "tutorial",
-                className: "TutorialScene",
             },
         ]
     });
     app.run();
 });
 
+phina.define('ExperimentModeSequence', {
+    superClass: 'ManagerScene',
+    init: function (param) {
+        this.superInit({
+            startLabel: "assignment",
+            scenes: [
+                {
+                    label: "assignment",
+                    className: "AssignmentScene",
+                    nextLabel: "messaging",
+                    arguments: param
+                },
+                {
+                    label: "messaging",
+                    className: "MessagingScene",
+                    nextLabel: "shifting",
+                    arguments: param
+                },
+                {
+                    label: "shifting",
+                    className: "ShiftingScene",
+                    nextLabel: "judgment",
+                    arguments: param
+                },
+                {
+                    label: "judgment",
+                    className: "JudgmentScene",
+                    arguments: param
+                },
+            ]
+        });
+        this.on('finish', () => {
+            this.exit(param);
+        });
+    },
+});
+
 phina.define('StartScene', {
     superClass: 'DisplayScene',
-    init: function (option) {
+    init: function () {
         this.superInit(option);
-        this.backgroundColor = 'white';
         Label(this.className)
             .setPosition(this.gridX.center(), this.gridY.span(5))
             .addChildTo(this);
-        // Label(params.message)
-        //   .setPosition(this.gridX.center(), this.gridY.span(7))
-        //   .addChildTo(this);
+
         Button({ text: 'tutorial' })
             .setPosition(this.gridX.center(), this.gridY.span(9))
             .addChildTo(this)
             .onpointstart = () => {
-                this.exit('tutorial');//to Scene
+                this.exit('experimentMode', { gameMode: 0 });
             };
-        Button({ text: 'start' })
+        Button({ text: 'start exp1' })
             .setPosition(this.gridX.center(), this.gridY.span(11))
             .addChildTo(this)
             .onpointstart = () => {
@@ -74,28 +106,26 @@ phina.define('StartScene', {
     },
 });
 
-phina.define('TutorialScene', {
-    superClass: 'DisplayScene',
-    init: function (option) {
-        this.superInit(option);
-        this.backgroundColor = 'gold';
-        Label(this.className)
-            .setPosition(this.gridX.center(), this.gridY.span(5))
-            .addChildTo(this);
-        Button({ text: 'back' })
-            .setPosition(this.gridX.center(), this.gridY.span(9))
-            .addChildTo(this)
-            .onpointstart = () => {
-                this.exit('start');//to Scene
-            };
-    },
-});
+// phina.define('ErrorScene', {
+//   superClass: 'DisplayScene',
+//   init: function(param) {
+//     this.superInit(option);
+//     Label('エラー:'+param.err)
+//       .setPosition(this.gridX.center(), this.gridY.span(5))
+//       .addChildTo(this);
+//     Button({text:'next'})
+//       .setPosition(this.gridX.center(), this.gridY.span(9))
+//       .addChildTo(this)
+//       .onpointstart = () => {
+//         this.exit();
+//       };
+//   },
+// });
 
 phina.define('MatchmakingScene', {
     superClass: 'DisplayScene',
-    init: function (option) {
+    init: function (param) {
         this.superInit(option);
-        this.backgroundColor = 'gray';
         Label(this.className)
             .setPosition(this.gridX.center(), this.gridY.span(5))
             .addChildTo(this);
@@ -103,96 +133,154 @@ phina.define('MatchmakingScene', {
             .setPosition(this.gridX.center(), this.gridY.span(9))
             .addChildTo(this)
             .onpointstart = () => {
-                this.exit();//to Scene
-            };
-        Button({ text: 'back' })
-            .setPosition(this.gridX.center(), this.gridY.span(11))
-            .addChildTo(this)
-            .onpointstart = () => {
-                this.exit('start');
+                this.exit('experimentMode', param); // param.gameModeをAssignmentSceneにそのまま渡す
             };
     },
 });
 
 phina.define('AssignmentScene', {
     superClass: 'DisplayScene',
-    init: function (option) {
+    init: function (param) {
         this.superInit(option);
-        this.backgroundColor = 'green'
-        Label(this.className)
+        Label(this.className + '\n Now GameMode is ' + param.gameMode)
             .setPosition(this.gridX.center(), this.gridY.span(5))
             .addChildTo(this);
         Button({ text: 'next' })
             .setPosition(this.gridX.center(), this.gridY.span(9))
             .addChildTo(this)
             .onpointstart = () => {
-                this.exit('messaging');//to MainScene
+                this.exit(param);//to MainScene
             };
     },
 });
 
 phina.define('MessagingScene', {
     superClass: 'DisplayScene',
-    init: function (option) {
+    init: function (param) {
         this.superInit(option);
-        this.backgroundColor = 'linen'
-        Label(this.className)
+        Label(this.className + '\n Now GameMode is ' + param.gameMode)
             .setPosition(this.gridX.center(), this.gridY.span(5))
             .addChildTo(this);
         Button({ text: 'next' })
             .setPosition(this.gridX.center(), this.gridY.span(9))
             .addChildTo(this)
             .onpointstart = () => {
-                this.exit('shifting');//to ThanksScene
+                this.exit(param);//to MainScene
             };
     },
 });
 
 phina.define('ShiftingScene', {
     superClass: 'DisplayScene',
-    init: function (option) {
+    init: function (param) {
         this.superInit(option);
-        this.backgroundColor = 'skyblue'
-        Label(this.className)
+        Label(this.className + '\n Now GameMode is ' + param.gameMode)
             .setPosition(this.gridX.center(), this.gridY.span(5))
             .addChildTo(this);
-        Button({ text: 'assignment' })
+        Button({ text: 'next' })
             .setPosition(this.gridX.center(), this.gridY.span(9))
             .addChildTo(this)
             .onpointstart = () => {
-                this.exit('assignment');//to MainScene
+                this.exit(param);
             };
-        Button({ text: 'messaging' })
+    },
+});
+
+phina.define('JudgmentScene', {
+    superClass: 'DisplayScene',
+    init: function (param) {
+        this.superInit(option);
+        Label(this.className + '\n Now GameMode is ' + param.gameMode)
+            .setPosition(this.gridX.center(), this.gridY.span(5))
+            .addChildTo(this);
+        Button({ text: 'to assignment' })
+            .setPosition(this.gridX.center(), this.gridY.span(7))
+            .addChildTo(this)
+            .onpointstart = () => {
+                this.exit('assignment', param);
+            };
+        Button({ text: 'to messaging' })
+            .setPosition(this.gridX.center(), this.gridY.span(9))
+            .addChildTo(this)
+            .onpointstart = () => {
+                this.exit('messaging', param);
+            };
+        Button({ text: 'finish game!' })
             .setPosition(this.gridX.center(), this.gridY.span(11))
             .addChildTo(this)
             .onpointstart = () => {
-                this.exit('messaging');//to MainScene
+                this.exit(param);
             };
-        Button({ text: 'gameover' })
-            .setPosition(this.gridX.center(), this.gridY.span(13))
+    },
+});
+
+phina.define('BreakScene', {
+    superClass: 'DisplayScene',
+    init: function (param) {
+        this.superInit(option);
+        this.backgroundColor = 'gray';
+        Label(this.className + '\n Now GameMode ' + param.gameMode + ' is finished.')
+            .setPosition(this.gridX.center(), this.gridY.span(5))
+            .addChildTo(this);
+        switch (param.gameMode) {
+            case 0: // チュートリアル終了時
+                Button({ text: 'back to start' })
+                    .setPosition(this.gridX.center(), this.gridY.span(9))
+                    .addChildTo(this)
+                    .onpointstart = () => {
+                        this.exit('start');//to StartScene
+                    };
+                break;
+            case 1: // exp1終了時
+                Button({ text: 'start exp2' })
+                    .setPosition(this.gridX.center(), this.gridY.span(9))
+                    .addChildTo(this)
+                    .onpointstart = () => {
+                        this.exit('experimentMode', { gameMode: 2 });//to Exp2
+                    };
+                break;
+            case 2: // exp2終了時
+                Button({ text: 'questionnaire' })
+                    .setPosition(this.gridX.center(), this.gridY.span(9))
+                    .addChildTo(this)
+                    .onpointstart = () => {
+                        this.exit('questionnaire');//to Thanks
+                    };
+                break;
+            default:
+                console.log('Invaild value: param.gameMode=' + param.gameMode)
+                break;
+        }
+    },
+});
+
+phina.define('QuestionnaireScene', {
+    superClass: 'DisplayScene',
+    init: function () {
+        this.superInit(option);
+        Label(this.className)
+            .setPosition(this.gridX.center(), this.gridY.span(5))
+            .addChildTo(this);
+        Button({ text: 'send' })
+            .setPosition(this.gridX.center(), this.gridY.span(11))
             .addChildTo(this)
             .onpointstart = () => {
-                this.exit('thanks');// to ThanksScene
+                this.exit();//to MainScene
             };
     },
 });
 
 phina.define('ThanksScene', {
     superClass: 'DisplayScene',
-    init: function (option) {
+    init: function () {
         this.superInit(option);
-        this.backgroundColor = 'pink'
         Label(this.className)
             .setPosition(this.gridX.center(), this.gridY.span(5))
-            .addChildTo(this);
-        Label('THANK YOU')
-            .setPosition(this.gridX.center(), this.gridY.center())
             .addChildTo(this);
         Button({ text: 'to start' })
             .setPosition(this.gridX.center(), this.gridY.span(11))
             .addChildTo(this)
             .onpointstart = () => {
-                // this.nextLabel="start";
                 this.exit('start');//to MainScene
             };
     },

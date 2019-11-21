@@ -1,9 +1,9 @@
 export default (phina, conf, socket)=> {
     phina.define('MatchmakingScene', {
         superClass: 'DisplayScene',
-        init: function () {
+        init: function (option) {
             // 親クラス初期化
-            this.superInit();
+            this.superInit(option);
             this.backgroundColor = conf.BACKGROUND_COLOR;
             const label = Label({
                 text: conf.MATCHMAKING_MSG,
@@ -23,7 +23,7 @@ export default (phina, conf, socket)=> {
                 label.fill = 'seagreen';
                 loading.remove();
                 await wait(1);
-                self.exit({ initPosi: initPosi, movable: movable});// to MainScene
+                self.exit('assignment');// to AssignmentScene
             });
         },
     });
