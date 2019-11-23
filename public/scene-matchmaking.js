@@ -1,9 +1,9 @@
 export default (phina, conf, socket)=> {
     phina.define('MatchmakingScene', {
         superClass: 'DisplayScene',
-        init: function (option) {
+        init: function (param) {
             // 親クラス初期化
-            this.superInit(option);
+            this.superInit(conf.SCREEN);
             this.backgroundColor = conf.BACKGROUND_COLOR;
             const label = Label({
                 text: conf.MATCHMAKING_MSG,
@@ -17,13 +17,15 @@ export default (phina, conf, socket)=> {
                 .setPosition(this.gridX.center(), this.gridY.center(+1));
             const self = this;
             socket.emit('join lobby');
-            socket.on('complete matchmake', async (pairId, initPosi,movable) => {
+            socket.on('complete matchmake', async (pairId, initVisiblePos,movablePos) => {
                 // console.log(pairId + 'のマッチングが完了');
                 label.text = conf.COMPLETE_MATCHMAKE_MSG;
                 label.fill = 'seagreen';
                 loading.remove();
-                await wait(1);
-                self.exit('assignment');// to AssignmentScene
+                param.visiblePos = initVisiblePos;
+                param.movablePos = movablePos;
+                // await wait(1);
+                self.exit('experimentMode', param);// to AssignmentScene
             });
         },
     });

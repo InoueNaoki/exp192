@@ -14,49 +14,81 @@ phina.globalize();// phina.js をグローバル領域に展開
 phina.main(() => {
     const app = GameApp({
         startLabel: 'start',
-        width: conf.SCREEN_WIDTH,
-        height: conf.SCREEN_HEIGHT,
+        width: conf.SCREEN.width,
+        height: conf.SCREEN.height,
         scenes: [
             {
                 label: "start",
                 className: "StartScene",
-                nextLabel: "matchmaking"
             },
             {
                 label: "matchmaking",
                 className: "MatchmakingScene",
-                nextLabel: "assignment"
+                nextLabel: "experimentMode",
+                arguments: { gameMode: 1 },
             },
             {
-                label: "assignment",
-                className: "AssignmentScene",
-                nextLabel: "messaging"
+                label: "experimentMode",
+                className: "ExperimentModeSequence",
+                nextLabel: "break",
             },
             {
-                label: "messaging",
-                className: "MessagingScene",
-                nextLabel: "shifting"
+                label: "break",
+                className: "BreakScene",
             },
             {
-                label: "shifting",
-                className: "ShiftingScene",
-                nextLabel: "assignment"
+                label: "questionnaire",
+                className: "QuestionnaireScene",
+                nextLabel: "thanks",
             },
             {
                 label: "thanks",
                 className: "ThanksScene",
-            },
-            {
-                label: "tutorial",
-                className: "TutorialScene",
             },
         ]     
     });
     app.run(); // アプリケーション実行
 });
 
+phina.define('ExperimentModeSequence', {
+    superClass: 'ManagerScene',
+    init: function (param) {
+        this.superInit({
+            startLabel: "assignment",
+            scenes: [
+                {
+                    label: "assignment",
+                    className: "AssignmentScene",
+                    nextLabel: "messaging",
+                    arguments: param
+                },
+                {
+                    label: "messaging",
+                    className: "MessagingScene",
+                    nextLabel: "shifting",
+                    arguments: param
+                },
+                {
+                    label: "shifting",
+                    className: "ShiftingScene",
+                    nextLabel: "judgment",
+                    arguments: param
+                },
+                {
+                    label: "judgment",
+                    className: "JudgmentScene",
+                    arguments: param
+                },
+            ]
+        });
+        this.on('finish', () => {
+            this.exit(param);
+        });
+    },
+});
+
 startScene(phina, conf);
 const socket = io();
 // socket.on('connect', () => {console.log('You are '+socket.id)});
 matchmakingScene(phina, conf, socket);
-// assignmentScene(phina, conf, socket);
+assignmentScene(phina, conf, socket);

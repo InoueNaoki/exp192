@@ -4,8 +4,8 @@ export default (phina, conf, socket)=> {
     /* AssignmentScene クラスを定義 */
     phina.define('AssignmentScene', {
         superClass: 'DisplayScene',
-        init: function (option) {
-            this.superInit(option);
+        init: function (param) {
+            this.superInit(conf.SCREEN);
             this.backgroundColor = conf.BACKGROUND_COLOR;// 背景色を指定
             const gx = this.gridX;
             const gy = this.gridY;
@@ -13,7 +13,7 @@ export default (phina, conf, socket)=> {
             MsgSendButton().addChildTo(this).setPosition(gx.span(2), gy.span(6));
             MsgFrame(true).addChildTo(this).setPosition(gx.span(2), gy.span(4));
             MsgFrame(false).addChildTo(this).setPosition(gx.span(4), gy.span(4));
-            Board(option.initPosi, option.movable).addChildTo(this).setPosition(gx.span(6), gy.span(8));
+            Board(param.visiblePos, param.movablePos).addChildTo(this).setPosition(gx.span(6), gy.span(8));
         },
     });
 
@@ -164,7 +164,7 @@ export default (phina, conf, socket)=> {
             (conf.CELL_NUM_X).times((spanX) => {
                 (conf.CELL_NUM_Y).times((spanY) => {
                     let isTop, isBottom, isLeft, isRight;
-                    // X軸方向の通路
+                    // X軸方向の通
                     if (spanX == 0) {
                         isLeft = false;
                         isRight = true;

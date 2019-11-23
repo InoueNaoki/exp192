@@ -1,8 +1,12 @@
 export default {
-    "BACKGROUND_COLOR": "gray",
+    "BACKGROUND_COLOR": "white",
     "CELL_COLOR": "white",
-    "SCREEN_WIDTH": 1920,
-    "SCREEN_HEIGHT": 1080,
+    "SCREEN": {
+        "width": 1920,
+        "height": 1080,
+    },
+    // "SCREEN_WIDTH": 1920,
+    // "SCREEN_HEIGHT": 1080,
     "MSG_FRAME_SIZE": 150,
     "FONT_COLOR": "black",
     "SHAPE_COLOR": "black",
@@ -20,7 +24,11 @@ export default {
         { "id": 1, "shape": "triangle" },
         { "id": 2, "shape": "square" },
         { "id": 3, "shape": "hexagon" }
-    ]
+    ],
+    // "OPTION": {
+    //     "height": this.SCREEN_HEIGHT,
+    //     "width": this.SCREEN_WIDTH,
+    // }
 };
 // const SCREEN_WIDTH = 1920; // 画面横サイズ
 // const SCREEN_HEIGHT = 1080; // 画面縦サイズ
