@@ -1,4 +1,4 @@
-export default (phina, conf, socket)=> {
+export default (phina, conf, socket) => {
     let currentShapeIndex = 0;
     const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
     /* AssignmentScene クラスを定義 */
@@ -16,7 +16,7 @@ export default (phina, conf, socket)=> {
             Board(param.visiblePos, param.movablePos).addChildTo(this).setPosition(gx.span(6), gy.span(8));
         },
     });
-
+    
     phina.define('MsgFrame', {
         // Shapeを継承
         superClass: 'Button',
@@ -31,7 +31,7 @@ export default (phina, conf, socket)=> {
                 text: '',
                 cornerRadius: 0,
             });
-            this.label(isSelfMsg);
+            SenderLabel(isSelfMsg).addChildTo(this).setPosition(0, 100);
             if (isSelfMsg) {
                 this.onpointstart = () => {
                     // switch (shapeList[currentShapeIndex].shape) {
@@ -44,7 +44,6 @@ export default (phina, conf, socket)=> {
                     this.drawShape(msg);
                 });
             }
-
         },
         drawShape: function (shape) {
             if (this.children[0]) this.children[0].remove(); //既に画像があれば削除
@@ -96,13 +95,22 @@ export default (phina, conf, socket)=> {
                     break;
             }
         },
-        label: function (isSelfMsg) { 
-            const nameLabel = isSelfMsg ? 'YOU' : 'PARTNER';
-            Label({
-                text: nameLabel,
+        // senderLabel: function (isSelfMsg) { 
+        //     Label({
+        //         text: isSelfMsg ? 'YOU' : 'PARTNER',
+        //         fontSize: conf.FONT_SIZE,
+        //         y: -conf.MSG_FRAME_SIZE * 0.8,
+        //     }).addChildTo(this);
+        // },
+    });
+
+    phina.define('SenderLabel', {
+        superClass: 'Label',
+        init: function (isSelfMsg) {
+            this.superInit({
+                text: isSelfMsg ? 'YOU' : 'PARTNER',
                 fontSize: conf.FONT_SIZE,
-                y: -conf.MSG_FRAME_SIZE*0.8,
-            }).addChildTo(this);
+            });
         },
     });
 
@@ -112,7 +120,6 @@ export default (phina, conf, socket)=> {
             this.superInit({
                 text: 'SEND',     // 表示文字
                 fontSize: conf.FONT_SIZE,       // 文字サイズ
-                // fontColor: WORD_COLOR, // 文字色
             });
         },
         update: function () {
@@ -143,6 +150,28 @@ export default (phina, conf, socket)=> {
             const min = ('00' + Math.floor(time / 60)).slice(-2);
             const sec = ('00' + Math.floor(time % 60)).slice(-2);
             this.text = 'elapsed：' + min + ':' + sec; // 経過秒数表示
+        },
+    });
+
+    phina.define('Round', {
+        superClass: 'Label',
+        init: function () {
+            this.superInit({
+                text: 'round:'+0,
+                fill: conf.FONT_COLOR,
+                fontSize: conf.FONT_SIZE,
+            });
+        },
+    });
+
+    phina.define('Score', {
+        superClass: 'Label',
+        init: function () {
+            this.superInit({
+                text: 'your score:'+0,
+                fill: conf.FONT_COLOR,
+                fontSize: conf.FONT_SIZE,
+            });
         },
     });
 
@@ -187,28 +216,28 @@ export default (phina, conf, socket)=> {
                         isBottom = true;
                     }
                     const cell = Cell(isTop, isBottom, isLeft, isRight).addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
-                    cell.setInteractive(true);
-                    cell.onpointstart = () => {
-                        console.log('clicked(' + spanX + ',' + spanY + ')' + this);
-                    };
                     const convertFrom2dTo1d = (x, y) => { return conf.CELL_NUM_Y * y + x };// ex. in:(0,0),(0,1),(0,2)...(2,2)→out:0,1,2...9
                     const coord = convertFrom2dTo1d(spanX, spanY);
-                    const self = this;
                     switch (coord) {
                         case initPosi[0]:
-                            Reward().addChildTo(self).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
+                            Reward().addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                             break;
                         case initPosi[1]:
-                            Player(true).addChildTo(self).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
+                            Player(true).addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                             break;
                         case initPosi[2]:
-                            Player(false).addChildTo(self).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
+                            Player(false).addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                             break;
                         default:
                             break;
                     }
-                    // Label({ text: coord }).addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
-                    if (movable[coord]) cell.fill = 'linen';
+                    if (movable[coord]) {
+                        cell.setInteractive(true);
+                        cell.onpointstart = () => {
+                            console.log('clicked(' + spanX + ',' + spanY + ')' + this);
+                        };
+                        cell.fill = 'linen';
+                    }
                 });
             });
         },

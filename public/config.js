@@ -5,8 +5,6 @@ export default {
         "width": 1920,
         "height": 1080,
     },
-    // "SCREEN_WIDTH": 1920,
-    // "SCREEN_HEIGHT": 1080,
     "MSG_FRAME_SIZE": 150,
     "FONT_COLOR": "black",
     "SHAPE_COLOR": "black",
