@@ -1,22 +1,64 @@
 export default (phina, conf, socket) => {
     let currentShapeIndex = 0;
     const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
-    /* AssignmentScene クラスを定義 */
-    phina.define('AssignmentScene', {
+    phina.define('GameScene', {
         superClass: 'DisplayScene',
         init: function (param) {
             this.superInit(conf.SCREEN);
-            this.backgroundColor = conf.BACKGROUND_COLOR;// 背景色を指定
             const gx = this.gridX;
             const gy = this.gridY;
             Timer().addChildTo(this).setPosition(gx.span(2), gy.span(1));
-            MsgSendButton().addChildTo(this).setPosition(gx.span(2), gy.span(6));
+            this.msgSendButton = MsgSendButton().addChildTo(this).setPosition(gx.span(2), gy.span(6));
             MsgFrame(true).addChildTo(this).setPosition(gx.span(2), gy.span(4));
             MsgFrame(false).addChildTo(this).setPosition(gx.span(4), gy.span(4));
-            Board(param.visiblePos, param.movablePos).addChildTo(this).setPosition(gx.span(6), gy.span(8));
+            Board(param.visiblePosArr,param.isMovablePosArr).addChildTo(this).setPosition(gx.span(8), gy.span(8));
+            // this.exit(param); //gameover
+            Button().addChildTo(this).onpush = () => { this.nextPhase() };
+            this.phaseLabel = Label().addChildTo(this).setPosition(gx.span(10), gy.span(6));
+            this.initPhase();
+            // this.nextPhase(); //nextphase
+
+            // this.phaseTitle = SendButton()
+            //     .setPosition(gx.center(), gy.span(5))
+            //     .addChildTo(this);
+
+            // this.board = Board();
+            // this.board.addChildTo(this).setPosition(200, 500);
+        },
+        initPhase: function () { 
+            if (!this.phase) {
+                this.phase = 'assignmnent';
+                this.phaseLabel.text = this.phase;
+            }
+            else console.error("すでに値が挿入されています");
+        },
+        nextPhase: function () {
+            switch (this.phase) {
+                case 'assignmnent':
+                    this.phase = 'messaging';
+                    // this.board.setInteractive(true);
+                    break;
+                case 'messaging':
+                    this.phase = 'moving';
+                    // this.board.setInteractive(false);
+                    break;
+                case 'moving':
+                    this.phase = 'judgment';
+                    break;
+                case 'judgment':
+                    this.phase = 'assignmnent';
+                    break;
+                default:
+                    console.error('invaild phase name');
+                    break;
+            }
+            this.phaseLabel.text = this.phase;
+            this.msgSendButton.setEnabled(false);
+            console.log(this.phase);
         },
     });
-    
+
+
     phina.define('MsgFrame', {
         // Shapeを継承
         superClass: 'Button',
@@ -31,10 +73,10 @@ export default (phina, conf, socket) => {
                 text: '',
                 cornerRadius: 0,
             });
-            SenderLabel(isSelfMsg).addChildTo(this).setPosition(0, 100);
+            this.senderLabel(isSelfMsg);
+            this.shapeGroup = DisplayElement().addChildTo(this);
             if (isSelfMsg) {
                 this.onpointstart = () => {
-                    // switch (shapeList[currentShapeIndex].shape) {
                     this.drawShape(shapeList[currentShapeIndex].shape);
                     if (shapeList[currentShapeIndex] == shapeList.last) currentShapeIndex = 0;//最後の図形になったらindexを0に戻して無限ループ
                     else currentShapeIndex++;
@@ -46,41 +88,41 @@ export default (phina, conf, socket) => {
             }
         },
         drawShape: function (shape) {
-            if (this.children[0]) this.children[0].remove(); //既に画像があれば削除
+            this.shapeGroup.children.clear(); //既に画像があれば削除
             switch (shape) {
                 case 'circle':
                     CircleShape({
                         radius: conf.MSG_FRAME_SIZE / 2 * 0.8,
                         fill: conf.SHAPE_COLOR,
-                    }).addChildTo(this);
+                    }).addChildTo(this.shapeGroup);
                     break;
                 case 'triangle':
                     TriangleShape({
                         radius: conf.MSG_FRAME_SIZE / 2,
                         fill: conf.SHAPE_COLOR,
                         y: conf.MSG_FRAME_SIZE * 0.1,
-                    }).addChildTo(this);
+                    }).addChildTo(this.shapeGroup);
                     break;
                 case 'square':
                     RectangleShape({
                         width: conf.MSG_FRAME_SIZE * 0.8,
                         height: conf.MSG_FRAME_SIZE * 0.8,
                         fill: conf.SHAPE_COLOR,
-                    }).addChildTo(this);
+                    }).addChildTo(this.shapeGroup);
                     break;
                 case 'hexagon':
                     PolygonShape({
                         radius: conf.MSG_FRAME_SIZE / 2 * 0.9,
                         fill: conf.SHAPE_COLOR,
                         sides: 6,
-                    }).addChildTo(this);
+                    }).addChildTo(this.shapeGroup);
                     break;
                 case 'diamond':
                     PolygonShape({
                         radius: conf.MSG_FRAME_SIZE / 2 * 0.9,
                         fill: conf.SHAPE_COLOR,
                         sides: 4,
-                    }).addChildTo(this);
+                    }).addChildTo(this.shapeGroup);
                     break;
                 case 'octagon':
                     PolygonShape({
@@ -88,20 +130,20 @@ export default (phina, conf, socket) => {
                         fill: conf.SHAPE_COLOR,
                         sides: 8,
                         rotation: 22.5,
-                    }).addChildTo(this);
+                    }).addChildTo(this.shapeGroup);
                     break;
                 default:
                     console.error('Invaild currentShapeIndex value:' + currentShapeIndex);
                     break;
             }
         },
-        // senderLabel: function (isSelfMsg) { 
-        //     Label({
-        //         text: isSelfMsg ? 'YOU' : 'PARTNER',
-        //         fontSize: conf.FONT_SIZE,
-        //         y: -conf.MSG_FRAME_SIZE * 0.8,
-        //     }).addChildTo(this);
-        // },
+        senderLabel: function (isSelfMsg) { 
+            Label({
+                text: isSelfMsg ? 'YOU' : 'PARTNER',
+                fontSize: conf.FONT_SIZE,
+                y: -conf.MSG_FRAME_SIZE * 0.8,
+            }).addChildTo(this);
+        }
     });
 
     phina.define('SenderLabel', {
@@ -118,20 +160,25 @@ export default (phina, conf, socket) => {
         superClass: 'Button',
         init: function () {
             this.superInit({
-                text: 'SEND',     // 表示文字
-                fontSize: conf.FONT_SIZE,       // 文字サイズ
+                text: 'SEND',
+                fontSize: conf.FONT_SIZE,
             });
         },
         update: function () {
             this.onpointstart = () => {
                 // ボタンが押されたときの処理
+                // GameScene(param).nextPhase();
                 // this.fill = 'lightgray';
                 // this.setInteractive(false);
-                const sendShape = (currentShapeIndex == 0) ? shapeList.last.shape : shapeList[currentShapeIndex - 1].shape//最初の図形のインデックスなら今の図形は最後の図形
-                console.log('send:' + sendShape);
+                const sendShape = (currentShapeIndex == 0) ? shapeList.last.shape : shapeList[currentShapeIndex - 1].shape // インデックスが最初の図形のなら今画面に表示されてる図形は最後の図形
                 socket.emit('send message', sendShape);
             };
-        }
+        },
+        setEnabled: function (bool) {
+            this.fill = bool ? conf.ENABLE_BUTTON_COLOR : conf.DISABLE_BUTTON_COLOR
+            // this.setInteractive(bool);
+            console.log(bool);
+        },
     });
 
     phina.define('Timer', {
@@ -153,33 +200,11 @@ export default (phina, conf, socket) => {
         },
     });
 
-    phina.define('Round', {
-        superClass: 'Label',
-        init: function () {
-            this.superInit({
-                text: 'round:'+0,
-                fill: conf.FONT_COLOR,
-                fontSize: conf.FONT_SIZE,
-            });
-        },
-    });
-
-    phina.define('Score', {
-        superClass: 'Label',
-        init: function () {
-            this.superInit({
-                text: 'your score:'+0,
-                fill: conf.FONT_COLOR,
-                fontSize: conf.FONT_SIZE,
-            });
-        },
-    });
-
-    // ゲーム盤クラス
     phina.define('Board', {
         superClass: 'DisplayElement',
-        init: function (initPosi,movable) {
+        init: function (visiblePosArr, isMovablePosArr) {
             this.superInit();
+            console.log(visiblePosArr);
             const boardGridX = Grid({
                 width: conf.GRID_SIZE * conf.CELL_NUM_X,
                 columns: conf.CELL_NUM_X,
@@ -194,10 +219,10 @@ export default (phina, conf, socket) => {
                 (conf.CELL_NUM_Y).times((spanY) => {
                     let isTop, isBottom, isLeft, isRight;
                     // X軸方向の通
-                    if (spanX == 0) {
+                    if (spanX === 0) {
                         isLeft = false;
                         isRight = true;
-                    } else if (spanX == conf.CELL_NUM_X - 1) {
+                    } else if (spanX === conf.CELL_NUM_X - 1) {
                         isLeft = true;
                         isRight = false;
                     } else {
@@ -205,61 +230,57 @@ export default (phina, conf, socket) => {
                         isRight = true;
                     }
                     // Y軸方向の通路
-                    if (spanY == 0) {
+                    if (spanY === 0) {
                         isTop = false;
                         isBottom = true;
-                    } else if (spanY == conf.CELL_NUM_Y - 1) {
+                    } else if (spanY === conf.CELL_NUM_Y - 1) {
                         isTop = true;
                         isBottom = false;
                     } else {
                         isTop = true;
                         isBottom = true;
                     }
-                    const cell = Cell(isTop, isBottom, isLeft, isRight).addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
+                    const cell = Cell(isTop, isBottom, isLeft, isRight)
+                        .addChildTo(this)
+                        .setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                     const convertFrom2dTo1d = (x, y) => { return conf.CELL_NUM_Y * y + x };// ex. in:(0,0),(0,1),(0,2)...(2,2)→out:0,1,2...9
-                    const coord = convertFrom2dTo1d(spanX, spanY);
-                    switch (coord) {
-                        case initPosi[0]:
+                    const coord1d = convertFrom2dTo1d(spanX, spanY);
+                    // if (visiblePosArr[1] == visiblePosArr[2]) {
+                    //     Player(true).addChildTo(this).setPosition(boardGridX.span(spanX) - conf.CELL_SIZE / 4 * 0.5, boardGridY.span(spanY));
+                    //     Player(false).addChildTo(this).setPosition(boardGridX.span(spanX) + conf.CELL_SIZE / 4 * 0.5, boardGridY.span(spanY));
+                    // }
+                    switch (coord1d) {
+                        case visiblePosArr[0]:
                             Reward().addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                             break;
-                        case initPosi[1]:
+                        case visiblePosArr[1]:
                             Player(true).addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                             break;
-                        case initPosi[2]:
+                        case visiblePosArr[2]:
                             Player(false).addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                             break;
                         default:
                             break;
                     }
-                    if (movable[coord]) {
-                        cell.setInteractive(true);
-                        cell.onpointstart = () => {
-                            console.log('clicked(' + spanX + ',' + spanY + ')' + this);
-                        };
+                    if (isMovablePosArr[coord1d]) {
                         cell.fill = 'linen';
+                        cell.onpointstart = () => {
+                            console.log('clicked(' + coord1d + ')')
+                        }
                     }
                 });
             });
         },
-    });
-
-    // 通路クラス
-    phina.define('Aisle', {
-        superClass: 'RectangleShape',
-        init: function (angle) {
-            this.superInit({
-                width: conf.WALL_WIDTH,// +1しないとstroke: falseしても謎の枠が出る
-                height: conf.CELL_SIZE / 2, //道幅
-                fill: conf.CELL_COLOR,
-                stroke: false,
-                rotation: angle,
+        setEnabled: function (bool) {
+            this.children.forEach((cell) => {
+                cell.setInteractive(bool);
             });
         },
     });
 
     // 部屋クラス
     phina.define('Cell', {
-        superClass: 'RectangleShape',
+        superClass: 'Button',
         init: function (isTop, isBottom, isLeft, isRight) {
             this.superInit({
                 width: conf.CELL_SIZE,
@@ -267,22 +288,41 @@ export default (phina, conf, socket) => {
                 fill: conf.CELL_COLOR,
                 stroke: conf.WALL_COLOR,
                 strokeWidth: conf.WALL_WIDTH,
+                cornerRadius: 0,
+                text: ''
             });
-            if (isTop) Aisle(90).addChildTo(this).setPosition(0, -conf.CELL_SIZE / 2);
-            if (isBottom) Aisle(90).addChildTo(this).setPosition(0, conf.CELL_SIZE / 2);
-            if (isLeft) Aisle(0).addChildTo(this).setPosition(-conf.CELL_SIZE / 2, 0);
-            if (isRight) Aisle(0).addChildTo(this).setPosition(conf.CELL_SIZE / 2, 0);
+            if (isTop) this.aisle(0, -conf.CELL_SIZE / 2, 90);
+            if (isBottom) this.aisle(0, conf.CELL_SIZE / 2, 90);
+            if (isLeft) this.aisle(-conf.CELL_SIZE / 2, 0, 0);
+            if (isRight) this.aisle(conf.CELL_SIZE / 2, 0, 0);
         },
+        aisle: function (x, y, angle) {
+            RectangleShape({
+                width: conf.WALL_WIDTH,
+                height: conf.CELL_SIZE / 2, //道幅
+                fill: conf.CELL_COLOR,
+                stroke: false,
+                rotation: angle,
+                x: x,
+                y: y
+            }).addChildTo(this);
+        }
     });
 
     phina.define('Player', {
-        superClass: 'CircleShape',
+        // superClass: 'CircleShape',
+        // init: function (isSelf) {
+        //     const playerColor = isSelf ? 'skyblue' : 'orange';
+        //     this.superInit({
+        //         radius: conf.CELL_SIZE / 2 * 0.5,
+        //         fill: playerColor,
+        //         strokeWidth: false,
+        //     });
+        // },
+        superClass: 'Label',
         init: function (isSelf) {
-            const playerColor = isSelf ? 'skyblue' : 'orange';
             this.superInit({
-                radius: conf.CELL_SIZE / 2 * 0.5,
-                fill: playerColor,
-                strokeWidth: false,
+                text: isSelf ? 'H' : 'G',
             });
         },
     });
@@ -297,20 +337,20 @@ export default (phina, conf, socket) => {
                 strokeWidth: false,
             });
             StarShape({
-                radius: tomato*0.7,
+                radius: tomato * 0.7,
                 fill: 'green',
                 sides: 5,
                 sideIndent: 0.5,
-                y: -tomato*0.7,
+                y: -tomato * 0.7,
             }).addChildTo(this);
             RectangleShape({
-                height: tomato*0.7,
-                width: tomato*0.2,
+                height: tomato * 0.7,
+                width: tomato * 0.2,
                 fill: 'green',
                 y: -tomato,
-                x: tomato*0.2,
+                x: tomato * 0.2,
                 rotation: 22.5,
             }).addChildTo(this);
         },
     });
-}
+};

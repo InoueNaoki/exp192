@@ -69,11 +69,11 @@ io.on('connection', (socket) => {
             isHost = false;
             socket.join(pairId);
             socket.leave(conf.LOBBY_NAME);
-            const initPosi = createInitPosiArr(9);
-            // console.log(initPosi);
-            // console.log(getVisibleArr(initPosi, true));
-            socket.emit('complete matchmake', pairId, getVisibleArr(initPosi, false), getMovableArr(initPosi[2]));//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
-            socket.broadcast.to(pairId).emit('complete matchmake', pairId, getVisibleArr(initPosi, true), getMovableArr(initPosi[1]));//ホスト(部屋全体)にもマッチング完了を伝える
+            const initialPosArr = createInitPosArr(9);
+            // console.log(initPosArr);
+            // console.log(getVisibleArr(initPosArr, true));
+            socket.emit('complete matchmake', pairId, getVisibleArr(initialPosArr, false), getIsMovableArr(initialPosArr[2]));//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
+            socket.broadcast.to(pairId).emit('complete matchmake', pairId, getVisibleArr(initialPosArr, true), getIsMovableArr(initialPosArr[1]));//ホスト(部屋全体)にもマッチング完了を伝える
         }
     });
 
@@ -119,13 +119,13 @@ function isHost() {
     return sqlQuery.query(`SELECT is_host FROM players WHERE user_id = "${socket.id}" `)['is_host'];
 }
 
-function createInitPosiArr() {
+function createInitPosArr() {
     const CELL_NUM = 9;
     const objNum = 3;
     let seq = [...Array(CELL_NUM).keys()];
-    const initPosi = shuffle(seq).slice(0, objNum);
+    const initPosArr = shuffle(seq).slice(0, objNum);
     // return [4, 5, 6];
-    return initPosi;
+    return initPosArr;
 }
 
 function shuffle(arr) {
@@ -145,6 +145,7 @@ function shuffle(arr) {
 //     });
 //     return coordArr;
 // }
+
 function isSameCell(fromCoord, toCoord) {
     if (fromCoord === toCoord) return true;
     else return false;
@@ -168,8 +169,8 @@ function isAdjacentCell(fromCoord, toCoord) {
     }
 }
 
-function getVisibleArr(initPosiArr, isHost) {
-    const visibleArr = JSON.parse(JSON.stringify(initPosiArr));
+function getVisibleArr(initPosArrArr, isHost) {
+    const visibleArr = JSON.parse(JSON.stringify(initPosArrArr));
     let reward = visibleArr[0];
     let host = visibleArr[1];
     let guest = visibleArr[2];
@@ -184,7 +185,7 @@ function getVisibleArr(initPosiArr, isHost) {
     return [reward, host, guest];
 }
 
-function getMovableArr(currentPosi) {
+function getIsMovableArr(currentPosi) {
     console.log('currentPosi' + currentPosi);
     const CELL_NUM = 9;
     return [...Array(CELL_NUM)].map((_, i) => {

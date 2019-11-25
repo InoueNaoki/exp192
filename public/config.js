@@ -1,11 +1,13 @@
 export default {
-    "BACKGROUND_COLOR": "white",
     "CELL_COLOR": "white",
     "SCREEN": {
         "width": 1920,
         "height": 1080,
+        "backgroundColor": "white"
     },
     "MSG_FRAME_SIZE": 150,
+    "ENABLE_BUTTON_COLOR": "skyblue",
+    "DISABLE_BUTTON_COLOR": "lightgray",
     "FONT_COLOR": "black",
     "SHAPE_COLOR": "black",
     "FONT_SIZE": 48,

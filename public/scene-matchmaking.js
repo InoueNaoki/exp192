@@ -4,7 +4,6 @@ export default (phina, conf, socket)=> {
         init: function (param) {
             // 親クラス初期化
             this.superInit(conf.SCREEN);
-            this.backgroundColor = conf.BACKGROUND_COLOR;
             const label = Label({
                 text: conf.MATCHMAKING_MSG,
                 fontSize: conf.FONT_SIZE,
@@ -15,17 +14,16 @@ export default (phina, conf, socket)=> {
             const loading = Loading(8)
                 .addChildTo(this)
                 .setPosition(this.gridX.center(), this.gridY.center(+1));
-            const self = this;
             socket.emit('join lobby');
-            socket.on('complete matchmake', async (pairId, initVisiblePos,movablePos) => {
+            socket.on('complete matchmake', async (pairId, initialVisiblePosArr,initialisMovablePosArr) => {
                 // console.log(pairId + 'のマッチングが完了');
                 label.text = conf.COMPLETE_MATCHMAKE_MSG;
                 label.fill = 'seagreen';
                 loading.remove();
-                param.visiblePos = initVisiblePos;
-                param.movablePos = movablePos;
+                param.visiblePosArr = initialVisiblePosArr;
+                param.isMovablePosArr = initialisMovablePosArr;
                 // await wait(1);
-                self.exit('experimentMode', param);// to AssignmentScene
+                this.exit(param);// to AssignmentScene
             });
         },
     });
