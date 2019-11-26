@@ -11,7 +11,7 @@ export default (phina, conf, socket) => {
             this.msgSendButton = MsgSendButton().addChildTo(this).setPosition(gx.span(2), gy.span(6));
             MsgFrame(true).addChildTo(this).setPosition(gx.span(2), gy.span(4));
             MsgFrame(false).addChildTo(this).setPosition(gx.span(4), gy.span(4));
-            Board(param.visiblePosArr,param.isMovablePosArr).addChildTo(this).setPosition(gx.span(8), gy.span(8));
+            Board(param.visiblePosArr,param.movablePosArr).addChildTo(this).setPosition(gx.span(8), gy.span(8));
             // this.exit(param); //gameover
             Button().addChildTo(this).onpush = () => { this.nextPhase() };
             this.phaseLabel = Label().addChildTo(this).setPosition(gx.span(10), gy.span(6));
@@ -146,22 +146,13 @@ export default (phina, conf, socket) => {
         }
     });
 
-    phina.define('SenderLabel', {
-        superClass: 'Label',
-        init: function (isSelfMsg) {
-            this.superInit({
-                text: isSelfMsg ? 'YOU' : 'PARTNER',
-                fontSize: conf.FONT_SIZE,
-            });
-        },
-    });
-
     phina.define('MsgSendButton', {
         superClass: 'Button',
         init: function () {
             this.superInit({
                 text: 'SEND',
                 fontSize: conf.FONT_SIZE,
+                fill: conf.ENABLE_BUTTON_COLOR
             });
         },
         update: function () {
@@ -176,8 +167,7 @@ export default (phina, conf, socket) => {
         },
         setEnabled: function (bool) {
             this.fill = bool ? conf.ENABLE_BUTTON_COLOR : conf.DISABLE_BUTTON_COLOR
-            // this.setInteractive(bool);
-            console.log(bool);
+            this.setInteractive(bool);
         },
     });
 
@@ -202,7 +192,7 @@ export default (phina, conf, socket) => {
 
     phina.define('Board', {
         superClass: 'DisplayElement',
-        init: function (visiblePosArr, isMovablePosArr) {
+        init: function (visiblePosArr, movablePosArr) {
             this.superInit();
             console.log(visiblePosArr);
             const boardGridX = Grid({
@@ -215,10 +205,11 @@ export default (phina, conf, socket) => {
                 columns: conf.CELL_NUM_Y,
                 offset: 0,
             });
-            (conf.CELL_NUM_X).times((spanX) => {
-                (conf.CELL_NUM_Y).times((spanY) => {
+            this.boardGridList = [];
+            (conf.CELL_NUM_Y).times((spanY) => {
+                (conf.CELL_NUM_X).times((spanX) => {
                     let isTop, isBottom, isLeft, isRight;
-                    // X軸方向の通
+                    // X軸方向の通路
                     if (spanX === 0) {
                         isLeft = false;
                         isRight = true;
@@ -245,30 +236,45 @@ export default (phina, conf, socket) => {
                         .setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                     const convertFrom2dTo1d = (x, y) => { return conf.CELL_NUM_Y * y + x };// ex. in:(0,0),(0,1),(0,2)...(2,2)→out:0,1,2...9
                     const coord1d = convertFrom2dTo1d(spanX, spanY);
-                    // if (visiblePosArr[1] == visiblePosArr[2]) {
-                    //     Player(true).addChildTo(this).setPosition(boardGridX.span(spanX) - conf.CELL_SIZE / 4 * 0.5, boardGridY.span(spanY));
-                    //     Player(false).addChildTo(this).setPosition(boardGridX.span(spanX) + conf.CELL_SIZE / 4 * 0.5, boardGridY.span(spanY));
-                    // }
-                    switch (coord1d) {
-                        case visiblePosArr[0]:
-                            Reward().addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
-                            break;
-                        case visiblePosArr[1]:
-                            Player(true).addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
-                            break;
-                        case visiblePosArr[2]:
-                            Player(false).addChildTo(this).setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
-                            break;
-                        default:
-                            break;
-                    }
-                    if (isMovablePosArr[coord1d]) {
+                    this.boardGridList.push({ x:boardGridX.span(spanX), y:boardGridY.span(spanY) });
+                    if (movablePosArr[coord1d]) {
                         cell.fill = 'linen';
                         cell.onpointstart = () => {
                             console.log('clicked(' + coord1d + ')')
                         }
                     }
                 });
+            });
+            this.drawObj(visiblePosArr);
+        },
+        drawObj: function (visiblePosArr) {
+            const rw = Reward();
+            const p2 = Player(false);
+            const p1 = Player(true);
+            const p1Pos = visiblePosArr[1];
+            const p2Pos = visiblePosArr[2];
+
+            visiblePosArr.forEach((visiblePos, i) => {
+                const bg = this.boardGridList[visiblePos];
+                if (visiblePos == null) return; // nullなら無視
+                else if (i === 0) rw.addChildTo(this).setPosition(bg.x, bg.y);
+                else if (i === 2) p2.addChildTo(this).setPosition(bg.x, bg.y);
+                else if (i === 1) p1.addChildTo(this).setPosition(bg.x, bg.y);//後に配置したほうが上に配置されるので
+                else console.error('存在しないオブジェクトを配置しようとしています'); 
+            });
+            if (p1Pos != null && p1Pos === p2Pos) {
+                p2.setPosition(this.boardGridList[p2Pos].x + 30, this.boardGridList[p2Pos].y);
+                p1.setPosition(this.boardGridList[p1Pos].x - 30, this.boardGridList[p1Pos].y);
+            }
+        },
+        drawMovableCell: function (MovableArr) { 
+            MovableArr.forEach((visiblePos, i) => {
+                const bg = this.boardGridList[visiblePos];
+                if (visiblePos == null) return; // nullなら無視
+                else if (i === 0) rw.addChildTo(this).setPosition(bg.x, bg.y);
+                else if (i === 2) p2.addChildTo(this).setPosition(bg.x, bg.y);
+                else if (i === 1) p1.addChildTo(this).setPosition(bg.x, bg.y);//後に配置したほうが上に配置されるので
+                else console.error('存在しないオブジェクトを配置しようとしています');
             });
         },
         setEnabled: function (bool) {
@@ -309,22 +315,41 @@ export default (phina, conf, socket) => {
         }
     });
 
-    phina.define('Player', {
-        // superClass: 'CircleShape',
-        // init: function (isSelf) {
-        //     const playerColor = isSelf ? 'skyblue' : 'orange';
-        //     this.superInit({
-        //         radius: conf.CELL_SIZE / 2 * 0.5,
-        //         fill: playerColor,
-        //         strokeWidth: false,
-        //     });
-        // },
-        superClass: 'Label',
+    phina.define('PlayerShadow', {
+        superClass: 'CircleShape',
         init: function (isSelf) {
+            const playerColor = isSelf ? 'skyblue' : 'orange';
             this.superInit({
-                text: isSelf ? 'H' : 'G',
+                radius: conf.CELL_SIZE / 2 * 0.5,
+                fill: 'transparent',
+                stroke: playerColor,
+                strokeWidth: 10,
             });
         },
+        // superClass: 'Label',
+        // init: function (isSelf) {
+        //     this.superInit({
+        //         text: isSelf ? 'H' : 'G',
+        //     });
+        // },
+    });
+
+    phina.define('Player', {
+        superClass: 'CircleShape',
+        init: function (isSelf) {
+            const playerColor = isSelf ? 'skyblue' : 'orange';
+            this.superInit({
+                radius: conf.CELL_SIZE / 2 * 0.5,
+                fill: playerColor,
+                strokeWidth: false,
+            });
+        },
+        // superClass: 'Label',
+        // init: function (isSelf) {
+        //     this.superInit({
+        //         text: isSelf ? 'H' : 'G',
+        //     });
+        // },
     });
 
     phina.define('Reward', {

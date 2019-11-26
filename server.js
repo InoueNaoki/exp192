@@ -70,10 +70,10 @@ io.on('connection', (socket) => {
             socket.join(pairId);
             socket.leave(conf.LOBBY_NAME);
             const initialPosArr = createInitPosArr(9);
-            // console.log(initPosArr);
-            // console.log(getVisibleArr(initPosArr, true));
-            socket.emit('complete matchmake', pairId, getVisibleArr(initialPosArr, false), getIsMovableArr(initialPosArr[2]));//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
-            socket.broadcast.to(pairId).emit('complete matchmake', pairId, getVisibleArr(initialPosArr, true), getIsMovableArr(initialPosArr[1]));//ホスト(部屋全体)にもマッチング完了を伝える
+            // console.log(initialPosArr);
+            console.log('p1(' + initialPosArr[1] + ')が動けるのは' + getMovableArr(initialPosArr[1]));
+            socket.emit('finish matchmake', pairId, getVisibleArr(initialPosArr, false), getIsMovableArr(initialPosArr[2]));//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
+            socket.broadcast.to(pairId).emit('finish matchmake', pairId, getVisibleArr(initialPosArr, true), getIsMovableArr(initialPosArr[1]));//ホスト(部屋全体)にもマッチング完了を伝える
         }
     });
 
@@ -96,6 +96,10 @@ http.listen(port, ip, () => {
     logger.info('[nodejs]port:' + port);
     logger.info('[nodejs]ip:' + ip);
 });
+
+function startAssignment() {
+    socket.emit('start assignment', );
+}
 
 /**
  * MySQLにSQL文を投げる関数
@@ -175,21 +179,34 @@ function getVisibleArr(initPosArrArr, isHost) {
     let host = visibleArr[1];
     let guest = visibleArr[2];
     if (isHost) {
-        if (!(isAdjacentCell(host, reward) || isSameCell(host, reward))) reward = false;
-        if (!(isAdjacentCell(host, guest) || isSameCell(host, guest))) guest = false;
+        if (!(isAdjacentCell(host, reward) || isSameCell(host, reward))) reward = null;
+        if (!(isAdjacentCell(host, guest) || isSameCell(host, guest))) guest = null;
     } else {
         // ゲストのとき
-        if (!(isAdjacentCell(guest, reward) || isSameCell(guest, reward))) reward = false;
-        if (!(isAdjacentCell(guest, host) || isSameCell(guest, host))) host = false;
+        if (!(isAdjacentCell(guest, reward) || isSameCell(guest, reward))) reward = null;
+        if (!(isAdjacentCell(guest, host) || isSameCell(guest, host))) host = null;
     }
     return [reward, host, guest];
+    // return [null, 6, 6];　//テスト用
 }
 
-function getIsMovableArr(currentPosi) {
-    console.log('currentPosi' + currentPosi);
+function getIsMovableArr(currentPos) {
     const CELL_NUM = 9;
     return [...Array(CELL_NUM)].map((_, i) => {
-        const isMovable = isAdjacentCell(currentPosi, i) || isSameCell(currentPosi, i);
-        return isMovable;
+        return isAdjacentCell(currentPos, i) || isSameCell(currentPos, i);
     });
+}
+
+function getMovableArr(currentPosi) {
+    const CELL_NUM = 9;
+    let movableArr = [];
+    [...Array(CELL_NUM)].forEach((_, i) => {
+        if (isAdjacentCell(currentPosi, i) || isSameCell(currentPosi, i)) {
+            movableArr.push(i);
+        }
+    });
+    return movableArr;
+    // return [...Array(CELL_NUM)].map((_, i) => {
+    //     return isAdjacentCell(currentPosi, i) || isSameCell(currentPosi, i);
+    // });
 }
