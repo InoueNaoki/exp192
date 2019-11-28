@@ -36,59 +36,96 @@ const dbConfig = conf.mysql;
 
 /* socket.io接続 */
 io.on('connection', (socket) => {
-    let pairId;
-    const userId = socket.id;　//現時点ではソケットIDで代用，いずれはCookieかユーザー記入式のIDで対応
-    // socket.id = 'testtesttest';でID変更可能
+    // const userId = socket.id;　//現時点ではソケットIDで代用，いずれはCookieかユーザー記入式のIDで対応
+    // socket.id = 'hoge'; //でID変更可能
     logger.info('[socket.io]' + socket.id + ' connected successfully');
     
     /* マッチメイキング　*/
     socket.on('join lobby', async () => {
         socket.join(conf.LOBBY_NAME); // 待機ロビーに入室
         logger.info('[socket.io]' + socket.id + ' joined lobby');
-        const createPlayerRecord = await sqlQuery(`INSERT INTO players SET user_id = "${userId}", socket_id = "${socket.id}";`);
-        const playerId = createPlayerRecord['insertId'];
-
+        await sqlQuery(`INSERT INTO players SET id = "${socket.id}";`);
+        // const playerId = insertPlayerRecord['insertId'];
+        // logger.info('[socket.io]' + socket.id + ' changed socket.id to ' + player.name);
         const selectMinId = await sqlQuery(`SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;`);
-        const mostWaitingPairId = selectMinId[0]['MIN(id)'];
-
-        if (!mostWaitingPairId) { 
-            // Host
-            const createPairRecord = await sqlQuery(`INSERT INTO pairs SET host_id = "${socket.id}";`);
-            await sqlQuery(`UPDATE players SET is_host = true WHERE socket_id = "${socket.id}";`);
-            pairId = createPairRecord['insertId'];
-            console.log(playerId+' is host of room'+pairId);
-            isHost = true;
+        let pairId = selectMinId[0]['MIN(id)']; //mostWaitingPairId
+        if (!pairId) { 
+            // Hosts
+            const insertPairRecord = await sqlQuery(`INSERT INTO pairs SET host_id = "${socket.id}";`);
+            await sqlQuery(`UPDATE players SET is_host = true WHERE id = "${socket.id}";`);
+            pairId = insertPairRecord['insertId'];
+            logger.info('[game]' + socket.id + ' is host of room' + pairId);
             socket.join(pairId);
             socket.leave(conf.LOBBY_NAME);
         } else {
             // Guest
-            await sqlQuery(`UPDATE pairs SET guest_id = "${socket.id}" WHERE id = "${mostWaitingPairId}";`);
-            await sqlQuery(`UPDATE players SET is_host = false WHERE socket_id = "${socket.id}";`);
-            pairId = mostWaitingPairId;
-            console.log(playerId + ' is guest of room' + pairId);
-            isHost = false;
+            await sqlQuery(`UPDATE pairs SET guest_id = "${socket.id}" WHERE id = "${pairId}";`);
+            await sqlQuery(`UPDATE players SET is_host = false WHERE id = "${socket.id}";`);
+            const selectHostId = await sqlQuery(`SELECT host_id FROM pairs WHERE id = "${pairId}";`);
+            const hostId = selectHostId[0]['host_id'];
+            logger.info('[game]' + socket.id + ' is guest of room' + pairId);
+            logger.info('[game] pair' + pairId + ' matchmaking complete (host:' + hostId+', guest:'+socket.id+')')
             socket.join(pairId);
             socket.leave(conf.LOBBY_NAME);
-            const initialPosArr = createInitPosArr(9);
             // console.log(initialPosArr);
-            console.log('p1(' + initialPosArr[1] + ')が動けるのは' + getMovableArr(initialPosArr[1]));
-            socket.emit('finish matchmake', pairId, getVisibleArr(initialPosArr, false), getIsMovableArr(initialPosArr[2]));//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
-            socket.broadcast.to(pairId).emit('finish matchmake', pairId, getVisibleArr(initialPosArr, true), getIsMovableArr(initialPosArr[1]));//ホスト(部屋全体)にもマッチング完了を伝える
+            // console.log('p1(' + initialPosArr[1] + ')が動けるのは' + getMovableArr(initialPosArr[1]));
+            // socket.emit('finish matchmaking', pairId, getVisibleArr(initialPosArr, false), getMovableArr(initialPosArr[2]));//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
+            // socket.broadcast.to(pairId).emit('finish matchmaking', pairId, getVisibleArr(initialPosArr, true), getMovableArr(initialPosArr[1]));//ホスト(部屋全体)にもマッチング完了を伝える
+            // console.log(pairId);
+            socket.to(hostId).emit('finish matchmaking', pairId, true, hostId, socket.id);//ホスト(部屋全体)にもマッチング完了を伝える
+            socket.emit('finish matchmaking', pairId, false, hostId, socket.id);//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
         }
+
+        // const playerId = createPlayerRecord['insertId'];
+
+        // const selectMinId = await sqlQuery(`SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;`);
+        // const mostWaitingPairId = selectMinId[0]['MIN(id)'];
+
+        // if (!mostWaitingPairId) {
+        //     // Host
+        //     const createPairRecord = await sqlQuery(`INSERT INTO pairs SET host_id = "${socket.id}";`);
+        //     await sqlQuery(`UPDATE players SET is_host = true WHERE socket_id = "${socket.id}";`);
+        //     pairId = createPairRecord['insertId'];
+        //     console.log(playerId + ' is host of room' + pairId);
+        //     isHost = true;
+        //     socket.join(pairId);
+        //     socket.leave(conf.LOBBY_NAME);
+        // } else {
+        //     // Guest
+        //     await sqlQuery(`UPDATE pairs SET guest_id = "${socket.id}" WHERE id = "${mostWaitingPairId}";`);
+        //     await sqlQuery(`UPDATE players SET is_host = false WHERE socket_id = "${socket.id}";`);
+        //     pairId = mostWaitingPairId;
+        //     console.log(playerId + ' is guest of room' + pairId);
+        //     isHost = false;
+        //     socket.join(pairId);
+        //     socket.leave(conf.LOBBY_NAME);
+        //     const initialPosArr = createInitPosArr(9);
+        //     // console.log(initialPosArr);
+        //     console.log('p1(' + initialPosArr[1] + ')が動けるのは' + getMovableArr(initialPosArr[1]));
+        //     socket.emit('finish matchmake', pairId, getVisibleArr(initialPosArr, false), getIsMovableArr(initialPosArr[2]));//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
+        //     socket.broadcast.to(pairId).emit('finish matchmake', pairId, getVisibleArr(initialPosArr, true), getIsMovableArr(initialPosArr[1]));//ホスト(部屋全体)にもマッチング完了を伝える
     });
 
-    /* メッセージ送信　*/
-    socket.on('send message', (msg) => {
-        socket.broadcast.to(pairId).emit('new message', msg);
-        logger.debug(socket.id+'send msg to '+pairId+': ' + msg);
+    /* assignmentフェーズ　*/
+    socket.on('request assignment', (guestId) => {
+        const initialPosArr = createInitPosArr(9);
+        socket.emit('response assignment', getVisibleArr(initialPosArr, true), getMovableArr(initialPosArr[1]));　//ホストの部屋割当情報をホストクライアントに送信
+        socket.to(guestId).emit('response assignment', getVisibleArr(initialPosArr, false), getMovableArr(initialPosArr[2])); //ゲストの部屋割当情報をゲストクライアントに送信
+        // logger.debug(socket.id + 'send msg to ' + pairId + ': ' + msg);
+    });
+
+    /* messagingフェーズ　*/
+    socket.on('request messaging', async (msg) => {
+        const pairId = await getPartnerId(socket.id);
+        socket.to(pairId).emit('response messaging', msg);
+        logger.info('[game]'+socket.id+'send message to '+pairId+': ' + msg);
     });
 
     /* ソケット切断時の処理 */
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
+        // const role = isHost(socket.id) ? 'host' : 'guest';
+        console.log(await isHost(socket.id)); //socketidがinitialのままの人が切断したときちょっと不安
         logger.info('[socket.io]' + socket.id + ' disconnected');
-        // const columnName = isHost ? 'host_id' : 'guest_id';
-        // sqlQuery(`UPDATE pairs SET ${columnName} = NULL WHERE id = ${pairId};`);
-        // これだとpairIdやcurrentsocket.idが最後に通信を始めたプレーヤーのものになってしまう
     });
 });
 
@@ -96,10 +133,6 @@ http.listen(port, ip, () => {
     logger.info('[nodejs]port:' + port);
     logger.info('[nodejs]ip:' + ip);
 });
-
-function startAssignment() {
-    socket.emit('start assignment', );
-}
 
 /**
  * MySQLにSQL文を投げる関数
@@ -119,8 +152,31 @@ async function sqlQuery(sqlStatement) {
     }
 }
 
-function isHost() {
-    return sqlQuery.query(`SELECT is_host FROM players WHERE user_id = "${socket.id}" `)['is_host'];
+async function isHost(socketId) {
+    const result = await sqlQuery(`SELECT is_host FROM players WHERE id = "${socketId}";`);
+    return result[0]['is_host'];
+    // return await sqlQuery(`SELECT is_host FROM players WHERE id = "${socketId}";`)[0]['is_host'];
+}
+
+async function getPartnerId(socketId) {
+    if (await isHost(socketId)) {
+        const result = await sqlQuery(`SELECT guest_id FROM pairs WHERE host_id = "${socketId}";`);
+        return result[0]['guest_id'];
+    }
+    else {
+        const result = await sqlQuery(`SELECT host_id FROM pairs WHERE guest_id = "${socketId}";`);
+        return result[0]['host_id'];
+    }
+}
+
+async function getHostId(guestId) {
+    const result = await sqlQuery(`SELECT host_id FROM pairs WHERE guest_id = "${guestId}";`);
+    return result[0]['host_id'];
+}
+
+async function getGuestId(hostId) {
+    const result = await sqlQuery(`SELECT guest_id FROM pairs WHERE host_id = "${hostId}";`);
+    return result[0]['guest_id'];
 }
 
 function createInitPosArr() {

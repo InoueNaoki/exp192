@@ -4,6 +4,8 @@ export default (phina, conf, socket) => {
     phina.define('GameScene', {
         superClass: 'DisplayScene',
         init: function (param) {
+            if (param.isHost) socket.emit('request assignment', param.guestId);
+            console.log(param);
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
             const gy = this.gridY;
@@ -11,19 +13,18 @@ export default (phina, conf, socket) => {
             this.msgSendButton = MsgSendButton().addChildTo(this).setPosition(gx.span(2), gy.span(6));
             MsgFrame(true).addChildTo(this).setPosition(gx.span(2), gy.span(4));
             MsgFrame(false).addChildTo(this).setPosition(gx.span(4), gy.span(4));
-            Board(param.visiblePosArr,param.movablePosArr).addChildTo(this).setPosition(gx.span(8), gy.span(8));
             // this.exit(param); //gameover
             Button().addChildTo(this).onpush = () => { this.nextPhase() };
             this.phaseLabel = Label().addChildTo(this).setPosition(gx.span(10), gy.span(6));
             this.initPhase();
-            // this.nextPhase(); //nextphase
+            socket.on('response assignment', (visiblePosArr, movablePosArr) => {
+                Board(visiblePosArr, movablePosArr).addChildTo(this).setPosition(gx.span(8), gy.span(8));
+                this.nextPhase(); //nextphase
+            });
 
-            // this.phaseTitle = SendButton()
-            //     .setPosition(gx.center(), gy.span(5))
-            //     .addChildTo(this);
-
-            // this.board = Board();
-            // this.board.addChildTo(this).setPosition(200, 500);
+            // socket.on('response messaging', (msg) => {
+            //     this.nextPhase();
+            // });
         },
         initPhase: function () { 
             if (!this.phase) {
@@ -35,12 +36,12 @@ export default (phina, conf, socket) => {
         nextPhase: function () {
             switch (this.phase) {
                 case 'assignmnent':
+                    this.msgSendButton.setEnabled(true);
                     this.phase = 'messaging';
-                    // this.board.setInteractive(true);
                     break;
                 case 'messaging':
                     this.phase = 'moving';
-                    // this.board.setInteractive(false);
+                    this.msgSendButton.setEnabled(false);
                     break;
                 case 'moving':
                     this.phase = 'judgment';
@@ -53,8 +54,6 @@ export default (phina, conf, socket) => {
                     break;
             }
             this.phaseLabel.text = this.phase;
-            this.msgSendButton.setEnabled(false);
-            console.log(this.phase);
         },
     });
 
@@ -82,7 +81,7 @@ export default (phina, conf, socket) => {
                     else currentShapeIndex++;
                 };
             } else {
-                socket.on('new message', (msg) => {
+                socket.on('response messaging', (msg) => {
                     this.drawShape(msg);
                 });
             }
@@ -158,11 +157,9 @@ export default (phina, conf, socket) => {
         update: function () {
             this.onpointstart = () => {
                 // ボタンが押されたときの処理
-                // GameScene(param).nextPhase();
-                // this.fill = 'lightgray';
-                // this.setInteractive(false);
-                const sendShape = (currentShapeIndex == 0) ? shapeList.last.shape : shapeList[currentShapeIndex - 1].shape // インデックスが最初の図形のなら今画面に表示されてる図形は最後の図形
-                socket.emit('send message', sendShape);
+                this.setEnabled(false);
+                const sendShape = (currentShapeIndex === 0) ? shapeList.last.shape : shapeList[currentShapeIndex - 1].shape // インデックスが最初の図形のなら今画面に表示されてる図形は最後の図形
+                socket.emit('request messaging', sendShape);
             };
         },
         setEnabled: function (bool) {
@@ -206,6 +203,7 @@ export default (phina, conf, socket) => {
                 offset: 0,
             });
             this.boardGridList = [];
+            this.cellGrop = [];
             (conf.CELL_NUM_Y).times((spanY) => {
                 (conf.CELL_NUM_X).times((spanX) => {
                     let isTop, isBottom, isLeft, isRight;
@@ -231,23 +229,19 @@ export default (phina, conf, socket) => {
                         isTop = true;
                         isBottom = true;
                     }
-                    const cell = Cell(isTop, isBottom, isLeft, isRight)
+                    const cellButton = Cell(isTop, isBottom, isLeft, isRight)
                         .addChildTo(this)
                         .setPosition(boardGridX.span(spanX), boardGridY.span(spanY));
                     const convertFrom2dTo1d = (x, y) => { return conf.CELL_NUM_Y * y + x };// ex. in:(0,0),(0,1),(0,2)...(2,2)→out:0,1,2...9
                     const coord1d = convertFrom2dTo1d(spanX, spanY);
-                    this.boardGridList.push({ x:boardGridX.span(spanX), y:boardGridY.span(spanY) });
-                    if (movablePosArr[coord1d]) {
-                        cell.fill = 'linen';
-                        cell.onpointstart = () => {
-                            console.log('clicked(' + coord1d + ')')
-                        }
-                    }
+                    // this.boardGridList.push({ x: boardGridX.span(spanX), y: boardGridY.span(spanY) });
+                    this.cellGrop.push({ cell: cellButton, x: boardGridX.span(spanX), y: boardGridY.span(spanY), cellNum: coord1d });
                 });
             });
-            this.drawObj(visiblePosArr);
+            this.drawVisibleObj(visiblePosArr);
+            this.drawMovableCell(movablePosArr)
         },
-        drawObj: function (visiblePosArr) {
+        drawVisibleObj: function (visiblePosArr) {
             const rw = Reward();
             const p2 = Player(false);
             const p1 = Player(true);
@@ -255,7 +249,7 @@ export default (phina, conf, socket) => {
             const p2Pos = visiblePosArr[2];
 
             visiblePosArr.forEach((visiblePos, i) => {
-                const bg = this.boardGridList[visiblePos];
+                const bg = this.cellGrop[visiblePos];
                 if (visiblePos == null) return; // nullなら無視
                 else if (i === 0) rw.addChildTo(this).setPosition(bg.x, bg.y);
                 else if (i === 2) p2.addChildTo(this).setPosition(bg.x, bg.y);
@@ -263,18 +257,17 @@ export default (phina, conf, socket) => {
                 else console.error('存在しないオブジェクトを配置しようとしています'); 
             });
             if (p1Pos != null && p1Pos === p2Pos) {
-                p2.setPosition(this.boardGridList[p2Pos].x + 30, this.boardGridList[p2Pos].y);
-                p1.setPosition(this.boardGridList[p1Pos].x - 30, this.boardGridList[p1Pos].y);
+                p2.setPosition(this.cellGrop[p2Pos].x + 30, this.cellGrop[p2Pos].y);
+                p1.setPosition(this.cellGrop[p1Pos].x - 30, this.cellGrop[p1Pos].y);
             }
         },
-        drawMovableCell: function (MovableArr) { 
-            MovableArr.forEach((visiblePos, i) => {
-                const bg = this.boardGridList[visiblePos];
-                if (visiblePos == null) return; // nullなら無視
-                else if (i === 0) rw.addChildTo(this).setPosition(bg.x, bg.y);
-                else if (i === 2) p2.addChildTo(this).setPosition(bg.x, bg.y);
-                else if (i === 1) p1.addChildTo(this).setPosition(bg.x, bg.y);//後に配置したほうが上に配置されるので
-                else console.error('存在しないオブジェクトを配置しようとしています');
+        drawMovableCell: function (movablePosArr) { 
+            movablePosArr.forEach((movablePos) => {
+                const cellButton = this.cellGrop[movablePos];
+                cellButton.cell.fill = 'linen';
+                cellButton.cell.onpointstart = () => {
+                    console.log('clicked(' + cellButton.cellNum + ')')
+                }
             });
         },
         setEnabled: function (bool) {

@@ -15,13 +15,17 @@ export default (phina, conf, socket)=> {
                 .addChildTo(this)
                 .setPosition(this.gridX.center(), this.gridY.center(+1));
             socket.emit('join lobby');
-            socket.on('finish matchmake', async (pairId, initialVisiblePosArr,initialMovablePosArr) => {
-                // console.log(pairId + 'のマッチングが完了');
+            socket.on('finish matchmaking', async (pairId,isHost,hostId,guestId) => {
+                console.log(pairId + 'のマッチングが完了');
                 label.text = conf.COMPLETE_MATCHMAKE_MSG;
                 label.fill = 'seagreen';
                 loading.remove();
-                param.visiblePosArr = initialVisiblePosArr;
-                param.movablePosArr = initialMovablePosArr;
+                // param.visiblePosArr = initialVisiblePosArr;
+                // param.movablePosArr = initialMovablePosArr;
+                param.pairId = pairId;
+                param.isHost = isHost;
+                param.hostId = hostId;
+                param.guestId = guestId;
                 // await wait(1);
                 this.exit(param);// to AssignmentScene
             });
