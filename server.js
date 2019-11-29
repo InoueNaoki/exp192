@@ -72,7 +72,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    /* assignmentフェーズ　*/
+    /* assignmentフェーズ: Hostのみがrequest */
     socket.on('request assignment', (guestId) => {
         const initialPosArr = createInitPosArr(9);
         socket.emit('response assignment', getVisibleArr(initialPosArr, true), getMovableArr(initialPosArr[1]));　//ホストの部屋割当情報をホストクライアントに送信
@@ -80,11 +80,11 @@ io.on('connection', (socket) => {
         // logger.debug(socket.id + 'send msg to ' + pairId + ': ' + msg);
     });
 
-    /* messagingフェーズ　*/
+    /* messagingフェーズ: お互いが任意の時間にrequest　*/
     socket.on('request messaging', async (msg) => {
-        const pairId = await getPartnerId(socket.id);
-        socket.to(pairId).emit('response messaging', msg);
-        logger.info('[game]'+socket.id+'send message to '+pairId+': ' + msg);
+        const partnerId = await getPartnerId(socket.id);
+        socket.to(partnerId).emit('response messaging', msg);
+        logger.info('[game]'+socket.id+'send message to '+partnerId+': ' + msg);
     });
 
     /* ソケット切断時の処理 */

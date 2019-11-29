@@ -1,24 +1,25 @@
 export default (phina, conf, socket) => {
-    let currentShapeIndex = 0;
-    const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
+    // let currentShapeIndex = 0;
+    // const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
     phina.define('GameScene', {
         superClass: 'DisplayScene',
         init: function (param) {
             if (param.isHost) socket.emit('request assignment', param.guestId);
+            const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
             const gy = this.gridY;
             Timer().addChildTo(this).setPosition(gx.span(2), gy.span(1));
-            this.msgSendButton = MsgSendButton().addChildTo(this).setPosition(gx.span(2), gy.span(6));
-            MsgFrame(true).addChildTo(this).setPosition(gx.span(2), gy.span(4));
-            MsgFrame(false).addChildTo(this).setPosition(gx.span(4), gy.span(4));
-            const board = Board().addChildTo(this).setPosition(gx.span(8), gy.span(8));
+            Round().addChildTo(this).setPosition(gx.span(2), gy.span(2));
+            Score().addChildTo(this).setPosition(gx.span(2), gy.span(3));
+            const board = Board().addChildTo(this).setPosition(gx.span(2), gy.span(6));
+            this.msgGroup = MsgGroup(shapeList).addChildTo(this).setPosition(gx.span(7), gy.span(5));
             // this.exit(param); //gameover
-            Button().addChildTo(this).onpush = () => { this.nextPhase() };
-            this.phaseLabel = Label().addChildTo(this).setPosition(gx.span(10), gy.span(6));
+            // Button().addChildTo(this).onpush = () => this.nextPhase();
+            this.phaseLabel = Label({fontSize: conf.FONT_SIZE}).addChildTo(this).setPosition(gx.span(5), gy.span(2));
             this.initPhase();
             socket.on('response assignment', (visiblePosArr, movablePosArr) => {
-                board.drawVisibleObj(visiblePosArr);
+                board.drawVisibleObj(visiblePosArr,param.isHost);
                 board.drawMovableCell(movablePosArr);
                 this.nextPhase(); //nextphase
             });
@@ -36,12 +37,12 @@ export default (phina, conf, socket) => {
         nextPhase: function () {
             switch (this.phase) {
                 case 'assignmnent':
-                    this.msgSendButton.setEnabled(true);
+                    this.msgGroup.setEnabled(true);
                     this.phase = 'messaging';
                     break;
                 case 'messaging':
+                    this.msgGroup.setEnabled(false);
                     this.phase = 'moving';
-                    // this.msgSendButton.setEnabled(false);
                     break;
                 case 'moving':
                     this.phase = 'judgment';
@@ -57,71 +58,96 @@ export default (phina, conf, socket) => {
         },
     });
 
-
-    phina.define('MsgFrame', {
-        // Shapeを継承
-        superClass: 'Button',
-        // コンストラクタ
-        init: function (isSelfMsg) {
-            // 親クラス初期化
-            this.superInit({
+    phina.define('MsgGroup', {
+        superClass: 'DisplayElement',
+        init: function (shapeList) { 
+            this.superInit();
+            this.currentShapeIndexList = [...Array(conf.MSG_NUM)];
+            const selfMsgGroup = DisplayElement().addChildTo(this);
+            this.msgField(true, conf.MSG_NUM, shapeList, selfMsgGroup);
+            const partnerMsgGroup = DisplayElement().addChildTo(this);
+            partnerMsgGroup.y = 400;
+            this.msgField(false, conf.MSG_NUM, shapeList, partnerMsgGroup);
+        },
+        msgField: function (isSelfMsg, msgNum, shapeList, parent) {
+            [...Array(msgNum)].forEach((_, i) => {
+                this.msgFrame(isSelfMsg, shapeList, i,parent);
+            });
+            this.senderLabel(isSelfMsg, parent);
+            if (isSelfMsg) this.msgSendButton(shapeList,parent);
+        },
+        senderLabel: function (isSelfMsg,parent) {
+            Label({
+                text: isSelfMsg ? 'YOU' : "PARTNER",
+                fontSize: conf.FONT_SIZE,
+                x: conf.MSG_FRAME_SIZE * conf.MSG_NUM / 4,
+                y: -conf.MSG_FRAME_SIZE * 0.8,
+            }).addChildTo(parent);
+        },
+        msgFrame: function (isSelfMsg, shapeList, i, parent) {
+            this.currentShapeIndexList[i] = 0;
+            const frame = Button({
                 width: conf.MSG_FRAME_SIZE,
                 height: conf.MSG_FRAME_SIZE,
-                fill: 'transparent', // 塗りつぶし色
-                stroke: 'darkgray',
-                text: '',
+                fill: 'transparent',
+                stroke: 'black',
+                text: isSelfMsg ? 'click' : 'waiting',
+                fontColor: 'lightgray',
                 cornerRadius: 0,
-            });
-            this.senderLabel(isSelfMsg);
-            this.shapeGroup = DisplayElement().addChildTo(this);
+                x: conf.MSG_FRAME_SIZE * i
+            }).addChildTo(parent);
+            // this.drawShape(shapeList[0], btn); //最初から画像を表示させるなら
             if (isSelfMsg) {
-                this.onpointstart = () => {
-                    this.drawShape(shapeList[currentShapeIndex].shape);
-                    if (shapeList[currentShapeIndex] == shapeList.last) currentShapeIndex = 0;//最後の図形になったらindexを0に戻して無限ループ
-                    else currentShapeIndex++;
+                frame.onpush = () => {
+                    frame.text = '';
+                    if (this.currentShapeIndexList[i] === shapeList.length - 1) this.currentShapeIndexList[i] = 0;
+                    else this.currentShapeIndexList[i]++;
+                    this.drawShape(shapeList[this.currentShapeIndexList[i]], frame);
                 };
-            } else {
-                socket.on('response messaging', (msg) => {
-                    this.drawShape(msg);
+            }
+            else {
+                socket.on('response messaging', (recieveShapeList) => {
+                    frame.text = '';
+                    this.drawShape(recieveShapeList[i], frame);
                 });
             }
         },
-        drawShape: function (shape) {
-            this.shapeGroup.children.clear(); //既に画像があれば削除
-            switch (shape) {
+        drawShape: function (shape,parent) {
+            parent.children.clear(); //既にある画像を削除
+            switch (shape.name) {
                 case 'circle':
                     CircleShape({
                         radius: conf.MSG_FRAME_SIZE / 2 * 0.8,
                         fill: conf.SHAPE_COLOR,
-                    }).addChildTo(this.shapeGroup);
+                    }).addChildTo(parent);
                     break;
                 case 'triangle':
                     TriangleShape({
                         radius: conf.MSG_FRAME_SIZE / 2,
                         fill: conf.SHAPE_COLOR,
                         y: conf.MSG_FRAME_SIZE * 0.1,
-                    }).addChildTo(this.shapeGroup);
+                    }).addChildTo(parent);
                     break;
                 case 'square':
                     RectangleShape({
                         width: conf.MSG_FRAME_SIZE * 0.8,
                         height: conf.MSG_FRAME_SIZE * 0.8,
                         fill: conf.SHAPE_COLOR,
-                    }).addChildTo(this.shapeGroup);
+                    }).addChildTo(parent);
                     break;
                 case 'hexagon':
                     PolygonShape({
                         radius: conf.MSG_FRAME_SIZE / 2 * 0.9,
                         fill: conf.SHAPE_COLOR,
                         sides: 6,
-                    }).addChildTo(this.shapeGroup);
+                    }).addChildTo(parent);
                     break;
                 case 'diamond':
                     PolygonShape({
                         radius: conf.MSG_FRAME_SIZE / 2 * 0.9,
                         fill: conf.SHAPE_COLOR,
                         sides: 4,
-                    }).addChildTo(this.shapeGroup);
+                    }).addChildTo(parent);
                     break;
                 case 'octagon':
                     PolygonShape({
@@ -129,42 +155,57 @@ export default (phina, conf, socket) => {
                         fill: conf.SHAPE_COLOR,
                         sides: 8,
                         rotation: 22.5,
-                    }).addChildTo(this.shapeGroup);
+                    }).addChildTo(parent);
                     break;
                 default:
                     console.error('Invaild currentShapeIndex value:' + currentShapeIndex);
                     break;
             }
         },
-        senderLabel: function (isSelfMsg) { 
-            Label({
-                text: isSelfMsg ? 'YOU' : 'PARTNER',
-                fontSize: conf.FONT_SIZE,
-                y: -conf.MSG_FRAME_SIZE * 0.8,
-            }).addChildTo(this);
-        }
-    });
-
-    phina.define('MsgSendButton', {
-        superClass: 'Button',
-        init: function () {
-            this.superInit({
+        msgSendButton: function (shapeList,parent) {
+            const btn = Button({
                 text: 'SEND',
                 fontSize: conf.FONT_SIZE,
-                fill: conf.ENABLE_BUTTON_COLOR
-            });
-        },
-        update: function () {
-            this.onpointstart = () => {
-                // ボタンが押されたときの処理
-                this.setEnabled(false);
-                const sendShape = (currentShapeIndex === 0) ? shapeList.last.shape : shapeList[currentShapeIndex - 1].shape // インデックスが最初の図形のなら今画面に表示されてる図形は最後の図形
-                socket.emit('request messaging', sendShape);
+                fill: conf.ENABLE_BUTTON_COLOR,
+                x: conf.MSG_FRAME_SIZE * conf.MSG_NUM / 4,
+                y: conf.MSG_FRAME_SIZE * 0.8,
+            }).addChildTo(parent);
+            btn.onpush = () => {
+                const sendShapeList = this.currentShapeIndexList.map((currentShapeIndex) => {
+                    return shapeList[currentShapeIndex];
+                });
+                socket.emit('request messaging', sendShapeList);
             };
         },
         setEnabled: function (bool) {
-            this.fill = bool ? conf.ENABLE_BUTTON_COLOR : conf.DISABLE_BUTTON_COLOR
-            this.setInteractive(bool);
+            // if (bool === true) this.show();
+            // else this.hide();
+            this.children.forEach((child) => {
+                child.setInteractive(bool);
+            });
+            // this.setInteractive(bool);
+        },
+    });
+
+    phina.define('Round', {
+        superClass: 'Label',
+        init: function () {
+            this.superInit({
+                text: 'ROUND: 0',
+                fill: conf.FONT_COLOR,
+                fontSize: conf.FONT_SIZE,
+            });
+        },
+    });
+
+    phina.define('Score', {
+        superClass: 'Label',
+        init: function () {
+            this.superInit({
+                text: 'SCORE: 0',
+                fill: conf.FONT_COLOR,
+                fontSize: conf.FONT_SIZE,
+            });
         },
     });
 
@@ -183,15 +224,14 @@ export default (phina, conf, socket) => {
             const time = this.time / 1000;
             const min = ('00' + Math.floor(time / 60)).slice(-2);
             const sec = ('00' + Math.floor(time % 60)).slice(-2);
-            this.text = 'elapsed：' + min + ':' + sec; // 経過秒数表示
+            this.text = 'TIME：' + min + ':' + sec; // 経過秒数表示
         },
     });
 
     phina.define('Board', {
         superClass: 'DisplayElement',
-        init: function (visiblePosArr, movablePosArr) {
+        init: function () {
             this.superInit();
-            console.log(visiblePosArr);
             const boardGridX = Grid({
                 width: conf.GRID_SIZE * conf.CELL_NUM_X,
                 columns: conf.CELL_NUM_X,
@@ -238,37 +278,58 @@ export default (phina, conf, socket) => {
                     this.cellGrop.push({ cell: cellButton, x: boardGridX.span(spanX), y: boardGridY.span(spanY), cellNum: coord1d });
                 });
             });
+            this.reward = Reward();
+            this.partnerAvater = Player(false);
+            this.selfAvater = Player(true);
         },
-        drawVisibleObj: function (visiblePosArr) {
-            const rw = Reward();
-            const p2 = Player(false);
-            const p1 = Player(true);
-            const p1Pos = visiblePosArr[1];
-            const p2Pos = visiblePosArr[2];
+        drawVisibleObj: function (visiblePosArr,isHost) {
+            const selfIndex = isHost ? 1 : 2;
+            const partnerIndex = isHost ? 2 : 1;
 
             visiblePosArr.forEach((visiblePos, i) => {
                 const bg = this.cellGrop[visiblePos];
                 if (visiblePos == null) return; // nullなら無視
-                else if (i === 0) rw.addChildTo(this).setPosition(bg.x, bg.y);
-                else if (i === 2) p2.addChildTo(this).setPosition(bg.x, bg.y);
-                else if (i === 1) p1.addChildTo(this).setPosition(bg.x, bg.y);//後に配置したほうが上に配置されるので
+                else if (i === 0) this.reward.addChildTo(this).setPosition(bg.x, bg.y);
+                else if (i === partnerIndex) this.partnerAvater.addChildTo(this).setPosition(bg.x, bg.y);
+                else if (i === selfIndex) {
+                    this.selfAvater.addChildTo(this).setPosition(bg.x, bg.y);//後に配置したほうが上に配置されるので
+                    PlayerShadow(true).addChildTo(this).setPosition(bg.x, bg.y);// 自分の影を配置
+                }
                 else console.error('存在しないオブジェクトを配置しようとしています'); 
             });
-            if (p1Pos != null && p1Pos === p2Pos) {
-                p2.setPosition(this.cellGrop[p2Pos].x + 30, this.cellGrop[p2Pos].y);
-                p1.setPosition(this.cellGrop[p1Pos].x - 30, this.cellGrop[p1Pos].y);
-            }
+            // if (selfPos != null && selfPos === partnerPos) {
+            //     this.partnerAvater.setPosition(this.cellGrop[partnerPos].x + 30, this.cellGrop[partnerPos].y);
+            //     this.selfAvater.setPosition(this.cellGrop[selfPos].x - 30, this.cellGrop[selfPos].y);
+            // }
         },
         drawMovableCell: function (movablePosArr) { 
             movablePosArr.forEach((movablePos) => {
                 const cellButton = this.cellGrop[movablePos];
                 cellButton.cell.fill = 'linen';
                 cellButton.cell.onpointstart = () => {
-                    console.log('clicked(' + cellButton.cellNum + ')')
+                    this.dest = cellButton.cellNum;
+                    this.selfAvater.setPosition(cellButton.x, cellButton.y);
+                    console.log('clicked(' + cellButton.cellNum + ')');
+                    this.destSendButton();
                 }
             });
         },
+        destSendButton: function () {
+            this.btn = Button({
+                text: 'SEND',
+                fontSize: conf.FONT_SIZE,
+                fill: conf.ENABLE_BUTTON_COLOR,
+                x: -200
+            }).addChildTo(this);
+            this.btn.onpush = () => {
+                // this.selfAvater.show();
+                console.log(this.dest);
+                // socket.emit('request moving', sendShape);
+            }
+        },
         setEnabled: function (bool) {
+            if (bool === true) this.btn.show();
+            else this.btn.hide();
             this.children.forEach((cell) => {
                 cell.setInteractive(bool);
             });
@@ -334,6 +395,7 @@ export default (phina, conf, socket) => {
                 fill: playerColor,
                 strokeWidth: false,
             });
+            Label(isSelf ? 'あなた' : '相手').addChildTo(this);
         },
         // superClass: 'Label',
         // init: function (isSelf) {

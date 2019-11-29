@@ -5,6 +5,7 @@ export default {
         "height": 1080,
         "backgroundColor": "white"
     },
+    "MSG_NUM": 2,
     "MSG_FRAME_SIZE": 150,
     "ENABLE_BUTTON_COLOR": "skyblue",
     "DISABLE_BUTTON_COLOR": "lightgray",
@@ -20,10 +21,12 @@ export default {
     "MATCHMAKING_MSG": "マッチング中......\nブラウザを閉じないでください",
     "COMPLETE_MATCHMAKE_MSG": "マッチング成立！\nしばらくこのままお待ち下さい",
     "SHAPE_LIST": [
-        { "id": 0, "shape": "circle" },
-        { "id": 1, "shape": "triangle" },
-        { "id": 2, "shape": "square" },
-        { "id": 3, "shape": "hexagon" }
+        { "id": 0, "name": "circle" },
+        { "id": 1, "name": "triangle" },
+        { "id": 2, "name": "square" },
+        { "id": 3, "name": "hexagon" },
+        // { "id": 4, "name": "diamond" },
+        // { "id": 5, "name": "octagon" },
     ],
     // "OPTION": {
     //     "height": this.SCREEN_HEIGHT,
