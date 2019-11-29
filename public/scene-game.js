@@ -5,7 +5,6 @@ export default (phina, conf, socket) => {
         superClass: 'DisplayScene',
         init: function (param) {
             if (param.isHost) socket.emit('request assignment', param.guestId);
-            console.log(param);
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
             const gy = this.gridY;
@@ -13,18 +12,19 @@ export default (phina, conf, socket) => {
             this.msgSendButton = MsgSendButton().addChildTo(this).setPosition(gx.span(2), gy.span(6));
             MsgFrame(true).addChildTo(this).setPosition(gx.span(2), gy.span(4));
             MsgFrame(false).addChildTo(this).setPosition(gx.span(4), gy.span(4));
+            const board = Board().addChildTo(this).setPosition(gx.span(8), gy.span(8));
             // this.exit(param); //gameover
             Button().addChildTo(this).onpush = () => { this.nextPhase() };
             this.phaseLabel = Label().addChildTo(this).setPosition(gx.span(10), gy.span(6));
             this.initPhase();
             socket.on('response assignment', (visiblePosArr, movablePosArr) => {
-                Board(visiblePosArr, movablePosArr).addChildTo(this).setPosition(gx.span(8), gy.span(8));
+                board.drawVisibleObj(visiblePosArr);
+                board.drawMovableCell(movablePosArr);
                 this.nextPhase(); //nextphase
             });
-
-            // socket.on('response messaging', (msg) => {
-            //     this.nextPhase();
-            // });
+            socket.on('response messaging', (msg) => {
+                this.nextPhase();
+            });
         },
         initPhase: function () { 
             if (!this.phase) {
@@ -41,7 +41,7 @@ export default (phina, conf, socket) => {
                     break;
                 case 'messaging':
                     this.phase = 'moving';
-                    this.msgSendButton.setEnabled(false);
+                    // this.msgSendButton.setEnabled(false);
                     break;
                 case 'moving':
                     this.phase = 'judgment';
@@ -238,8 +238,6 @@ export default (phina, conf, socket) => {
                     this.cellGrop.push({ cell: cellButton, x: boardGridX.span(spanX), y: boardGridY.span(spanY), cellNum: coord1d });
                 });
             });
-            this.drawVisibleObj(visiblePosArr);
-            this.drawMovableCell(movablePosArr)
         },
         drawVisibleObj: function (visiblePosArr) {
             const rw = Reward();
