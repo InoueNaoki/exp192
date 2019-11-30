@@ -18,9 +18,11 @@ export default (phina, conf, socket) => {
             // Button().addChildTo(this).onpush = () => this.nextPhase();
             this.phaseLabel = Label({fontSize: conf.FONT_SIZE}).addChildTo(this).setPosition(gx.span(5), gy.span(2));
             this.initPhase();
-            socket.on('response assignment', (visiblePosArr, movablePosArr) => {
-                board.drawVisibleObj(visiblePosArr,param.isHost);
-                board.drawMovableCell(movablePosArr);
+            socket.on('response assignment', (visiblePosDic, movablePosList) => {
+                // console.log(visiblePosArr);
+                // console.log(movablePosArr);
+                board.drawVisibleObj(visiblePosDic);
+                board.drawMovableCell(movablePosList, visiblePosDic);
                 roundLabel.nextRound();
                 this.nextPhase(); //nextphase
             });
@@ -290,38 +292,49 @@ export default (phina, conf, socket) => {
                     this.cellGrop.push({ cell: cellButton, x: boardGridX.span(spanX), y: boardGridY.span(spanY), cellNum: coord1d });
                 });
             });
-            this.reward = Reward();
+            this.rewardAvater = Reward();
             this.partnerAvater = Player(false);
             this.selfAvater = Player(true);
         },
-        drawVisibleObj: function (visiblePosArr,isHost) {
-            const selfIndex = isHost ? 1 : 2;
-            const partnerIndex = isHost ? 2 : 1;
+        drawVisibleObj: function (visiblePosDic) {
+            const bg = (visiblePos) => { return this.cellGrop[visiblePos] };
+            const rewardPos = visiblePosDic.reward;
+            const selfPos = visiblePosDic.self;
+            const partnerPos = visiblePosDic.partner;
+            if (rewardPos != null) this.rewardAvater.addChildTo(this).setPosition(bg(rewardPos).x, bg(rewardPos).y);
+            if (partnerPos != null) this.partnerAvater.addChildTo(this).setPosition(bg(partnerPos).x, bg(partnerPos).y);
+            if (selfPos != null) {
+                this.selfAvater.addChildTo(this).setPosition(bg(selfPos).x, bg(selfPos).y);
+                // PlayerShadow(true).addChildTo(this).setPosition(bg(selfPos).x, bg(selfPos).y)
+            }
 
-            visiblePosArr.forEach((visiblePos, i) => {
-                const bg = this.cellGrop[visiblePos];
-                if (visiblePos == null) return; // nullなら無視
-                else if (i === 0) this.reward.addChildTo(this).setPosition(bg.x, bg.y);
-                else if (i === partnerIndex) this.partnerAvater.addChildTo(this).setPosition(bg.x, bg.y);
-                else if (i === selfIndex) {
-                    this.selfAvater.addChildTo(this).setPosition(bg.x, bg.y);//後に配置したほうが上に配置されるので
-                    PlayerShadow(true).addChildTo(this).setPosition(bg.x, bg.y);// 自分の影を配置
-                }
-                else console.error('存在しないオブジェクトを配置しようとしています'); 
-            });
-            // if (selfPos != null && selfPos === partnerPos) {
-            //     this.partnerAvater.setPosition(this.cellGrop[partnerPos].x + 30, this.cellGrop[partnerPos].y);
-            //     this.selfAvater.setPosition(this.cellGrop[selfPos].x - 30, this.cellGrop[selfPos].y);
-            // }
+            //かぶったとき
+            if (selfPos === partnerPos) {
+                this.partnerAvater.setPosition(bg(partnerPos).x + 30, bg(partnerPos).y);
+                this.selfAvater.setPosition(bg(selfPos).x - 30, bg(selfPos).y);
+            }
+            if (selfPos === rewardPos) {
+                this.rewardAvater.setPosition(bg(rewardPos).x, bg(rewardPos).y - 30);
+                // const rect = RectangleShape({
+                //     width: conf.CELL_SIZE * 0.5,
+                //     fill: 'MISTYROSE',
+                //     cornerRadius: conf.CELL_SIZE * 0.05
+                // }).addChildTo(this).setPosition(bg(rewardPos).x - 50, bg(rewardPos).y + 50);
+                // Label({
+                //     text: 'GET!',
+                //     fill: 'CRIMSON'
+                // }).addChildTo(rect);
+            }
         },
-        drawMovableCell: function (movablePosArr) { 
-            movablePosArr.forEach((movablePos) => {
+        drawMovableCell: function (movablePosList, visiblePosDic) { 
+            movablePosList.forEach((movablePos) => {
                 const cellButton = this.cellGrop[movablePos];
                 cellButton.cell.fill = 'linen';
                 cellButton.cell.onpointstart = () => {
                     this.dest = cellButton.cellNum;
-                    this.selfAvater.setPosition(cellButton.x, cellButton.y);
-                    console.log('clicked(' + cellButton.cellNum + ')');
+                    visiblePosDic.self = cellButton.cellNum;
+                    this.drawVisibleObj(visiblePosDic);
+                    // console.log('clicked(' + cellButton.cellNum + ')');
                     this.destSendButton();
                 }
             });
@@ -334,10 +347,9 @@ export default (phina, conf, socket) => {
                 x: conf.GRID_SIZE,
                 y: conf.GRID_SIZE * conf.CELL_NUM_Y,
             }).addChildTo(this);
-            this.btn.onpush = () => {
-                // this.selfAvater.show();
+            this.btn.onpointstart = () => {
                 console.log(this.dest);
-                // socket.emit('request moving', sendShape);
+                socket.emit('request moving', this.dest,999);
             }
         },
         setEnabled: function (bool) {

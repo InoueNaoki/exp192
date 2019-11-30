@@ -75,10 +75,10 @@ io.on('connection', (socket) => {
     /* assignmentフェーズ: Hostのみがrequest */
     socket.on('request assignment', async () => {
         const guestId = await getGuestId(socket.id);
-        const initialPosArr = createInitPosArr(9);
-        socket.emit('response assignment', getVisibleArr(initialPosArr, true), getMovableArr(initialPosArr[1]));　//ホストの部屋割当情報をホストクライアントに送信
-        socket.to(guestId).emit('response assignment', getVisibleArr(initialPosArr, false), getMovableArr(initialPosArr[2])); //ゲストの部屋割当情報をゲストクライアントに送信
-        logger.info('[game]pair('+socket.id + ', ' + guestId + ') were assigned ' + initialPosArr);
+        const initialPosDic = createInitialPosDic(9);
+        socket.emit('response assignment', getVisibleDic(initialPosDic, true), getMovableList(initialPosDic.host));　//ホストの部屋割当情報をホストクライアントに送信
+        socket.to(guestId).emit('response assignment', getVisibleDic(initialPosDic, false), getMovableList(initialPosDic.guest)); //ゲストの部屋割当情報をゲストクライアントに送信
+        logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPosDic));
     });
 
     /* messagingフェーズ: お互いが任意の時間にrequest　*/
@@ -93,6 +93,26 @@ io.on('connection', (socket) => {
             socket.emit('finish messaging'); // 自分にemitされなかったので
             await updateStatus(pairId);
         };
+    });
+
+    /* movingフェーズ: お互いが任意の時間にrequest */
+    socket.on('request moving', async (dest) => {
+        const pairId = await getPairId(socket.id);
+        // const partnerId = await getPartnerId(socket.id);
+        logger.info('[game]' + socket.id + ' move to ' + dest + ' at room' + pairId);
+        await updateStatus(pairId);
+        if (await selectCurrentStatus(pairId) === 'DONE') {
+            socket.to(pairId).emit('finish moving');
+            socket.emit('finish moving'); // messagingと同じく自分にemitされなかったので
+            await updateStatus(pairId);
+        };
+    });
+
+    /* judgementフェーズ: Hostのみがrequest */
+    socket.on('request judgement', async () => {
+        const guestId = await getGuestId(socket.id);
+        socket.emit('response judgement');
+        // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPosDic));
     });
 
     /* ソケット切断時の処理 */
@@ -195,13 +215,16 @@ async function getPairId(socketId) {
  * 報酬，プレイヤー1・２の位置を表す配列を返す関数
  * @return {Array} initPosArr:初期位置を示す配列
  */
-function createInitPosArr() {
+function createInitialPosDic() {
     const CELL_NUM = 9;
-    const objNum = 3;
-    let seq = [...Array(CELL_NUM).keys()];
-    const initPosArr = shuffle(seq).slice(0, objNum);
-    return [3, 4, 5];
-    // return initPosArr;
+    const shuffledSeq = shuffle([...Array(CELL_NUM).keys()]);
+    const initialPosDic = {
+        reward: shuffledSeq[0],
+        host: shuffledSeq[1],
+        guest: shuffledSeq[2],
+    };
+    return {reward: 3, host: 4, guest: 5};
+    // return initialPosDic;
 }
 
 function shuffle(arr) {
@@ -245,40 +268,36 @@ function isAdjacentCell(fromCoord, toCoord) {
     }
 }
 
-function getVisibleArr(initPosArrArr, isHost) {
-    const visibleArr = JSON.parse(JSON.stringify(initPosArrArr));
-    let reward = visibleArr[0];
-    let host = visibleArr[1];
-    let guest = visibleArr[2];
-    if (isHost) {
-        if (!(isAdjacentCell(host, reward) || isSameCell(host, reward))) reward = null;
-        if (!(isAdjacentCell(host, guest) || isSameCell(host, guest))) guest = null;
-    } else {
-        // ゲストのとき
-        if (!(isAdjacentCell(guest, reward) || isSameCell(guest, reward))) reward = null;
-        if (!(isAdjacentCell(guest, host) || isSameCell(guest, host))) host = null;
-    }
-    return [reward, host, guest];
-    // return [null, 6, 6];　//テスト用
+function getVisibleDic(posDic, isHost) {
+    // let dic = JSON.parse(JSON.stringify(posDic)); 
+    const rewardPos = posDic.reward;
+    const selfPos = isHost ? posDic.host : posDic.guest;
+    const partnerPos = isHost ? posDic.guest : posDic.host;
+    const isVisible = (fromCoord, toCoord) => {
+        return isAdjacentCell(fromCoord, toCoord) || isSameCell(fromCoord, toCoord)
+    };
+    const VisibleDic = {
+        reward: isVisible(selfPos, rewardPos) ? rewardPos : null,
+        self: selfPos,
+        partner: isVisible(selfPos, partnerPos) ? partnerPos : null,
+    };
+    return VisibleDic;
 }
 
-function getIsMovableArr(currentPos) {
-    const CELL_NUM = 9;
-    return [...Array(CELL_NUM)].map((_, i) => {
-        return isAdjacentCell(currentPos, i) || isSameCell(currentPos, i);
-    });
-}
+// function getIsMovableArr(currentPos) {
+//     const CELL_NUM = 9;
+//     return [...Array(CELL_NUM)].map((_, i) => {
+//         return isAdjacentCell(currentPos, i) || isSameCell(currentPos, i);
+//     });
+// }
 
-function getMovableArr(currentPosi) {
+function getMovableList(currentPosi) {
     const CELL_NUM = 9;
-    let movableArr = [];
+    let movableList = [];
     [...Array(CELL_NUM)].forEach((_, i) => {
         if (isAdjacentCell(currentPosi, i) || isSameCell(currentPosi, i)) {
-            movableArr.push(i);
+            movableList.push(i);
         }
     });
-    return movableArr;
-    // return [...Array(CELL_NUM)].map((_, i) => {
-    //     return isAdjacentCell(currentPosi, i) || isSameCell(currentPosi, i);
-    // });
+    return movableList;
 }
