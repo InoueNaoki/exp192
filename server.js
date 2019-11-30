@@ -73,18 +73,26 @@ io.on('connection', (socket) => {
     });
 
     /* assignmentフェーズ: Hostのみがrequest */
-    socket.on('request assignment', (guestId) => {
+    socket.on('request assignment', async () => {
+        const guestId = await getGuestId(socket.id);
         const initialPosArr = createInitPosArr(9);
         socket.emit('response assignment', getVisibleArr(initialPosArr, true), getMovableArr(initialPosArr[1]));　//ホストの部屋割当情報をホストクライアントに送信
         socket.to(guestId).emit('response assignment', getVisibleArr(initialPosArr, false), getMovableArr(initialPosArr[2])); //ゲストの部屋割当情報をゲストクライアントに送信
-        // logger.debug(socket.id + 'send msg to ' + pairId + ': ' + msg);
+        logger.info('[game]pair('+socket.id + ', ' + guestId + ') were assigned ' + initialPosArr);
     });
 
     /* messagingフェーズ: お互いが任意の時間にrequest　*/
     socket.on('request messaging', async (msg) => {
-        const partnerId = await getPartnerId(socket.id);
-        socket.to(partnerId).emit('response messaging', msg);
-        logger.info('[game]'+socket.id+'send message to '+partnerId+': ' + msg);
+        const pairId = await getPairId(socket.id);
+        // const partnerId = await getPartnerId(socket.id);
+        socket.broadcast.to(pairId).emit('response messaging', msg);
+        logger.info('[game]' + socket.id + ' send message ' + JSON.stringify(msg) + ' at room' + pairId);
+        await updateStatus(pairId);
+        if (await selectCurrentStatus(pairId) === 'DONE') {
+            socket.to(pairId).emit('finish messaging'); //これだけだと自分にemitされない　なぜ？
+            socket.emit('finish messaging'); // 自分にemitされなかったので
+            await updateStatus(pairId);
+        };
     });
 
     /* ソケット切断時の処理 */
@@ -119,6 +127,25 @@ async function sqlQuery(sqlStatement) {
 }
 
 /**
+ * 
+ * @param {String} socketId socket.id
+ */
+async function selectCurrentStatus(pairId) {
+    // const pairId = await getPairId(socketId);
+    const result = await sqlQuery(`SELECT status FROM pairs WHERE id = "${pairId}";`);
+    return result[0]['status'];
+}
+
+/**
+ * 次のstatusにする関数 DEFAULT(先手・後手待ち)→WAITING(先手完了，後手待ち)→DONE(先手・後手完了)→(次のフェーズの)DEFAULT...のループ
+ * @param {String} socketId socket.id
+ */
+async function updateStatus(pairId) {
+    // const pairId = await getPairId(socketId);
+    await sqlQuery(`UPDATE pairs SET status = IF(status = "DEFAULT","WAITING",IF(status = "WAITING" ,"DONE","DEFAULT")) WHERE id = "${pairId}";`);
+}
+
+/**
  * Hostかどうかを返す(boolean)関数
  * @param {String} socketId socket.id
  * @return {Boolean} true:host,false:guest
@@ -145,6 +172,26 @@ async function getPartnerId(socketId) {
 }
 
 /**
+ * HostIdを入力するとguestIdを返す関数
+ * @param {String} hostId socket.id
+ * @return {String} guestId
+ */
+async function getGuestId(hostId) {
+    const result = await sqlQuery(`SELECT guest_id FROM pairs WHERE host_id = "${hostId}";`);
+    return result[0]['guest_id'];
+}
+
+/**
+ * socket.idが入室しているroom name(pairId)を返す関数
+ * @param {String} socketId 自分のsocket.id
+ * @return {String} room name(pairId)
+ */
+async function getPairId(socketId) {
+    const result = await sqlQuery(`SELECT id FROM pairs WHERE host_id = "${socketId}" or guest_id = "${socketId}";`);
+    return result[0]['id'];
+}
+
+/**
  * 報酬，プレイヤー1・２の位置を表す配列を返す関数
  * @return {Array} initPosArr:初期位置を示す配列
  */
@@ -153,8 +200,8 @@ function createInitPosArr() {
     const objNum = 3;
     let seq = [...Array(CELL_NUM).keys()];
     const initPosArr = shuffle(seq).slice(0, objNum);
-    // return [4, 5, 6];
-    return initPosArr;
+    return [3, 4, 5];
+    // return initPosArr;
 }
 
 function shuffle(arr) {

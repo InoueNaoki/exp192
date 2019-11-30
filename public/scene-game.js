@@ -4,16 +4,16 @@ export default (phina, conf, socket) => {
     phina.define('GameScene', {
         superClass: 'DisplayScene',
         init: function (param) {
-            if (param.isHost) socket.emit('request assignment', param.guestId);
+            if (param.isHost) socket.emit('request assignment');
             const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
             const gy = this.gridY;
             Timer().addChildTo(this).setPosition(gx.span(2), gy.span(1));
-            Round().addChildTo(this).setPosition(gx.span(2), gy.span(2));
+            const roundLabel = Round().addChildTo(this).setPosition(gx.span(2), gy.span(2));
             Score().addChildTo(this).setPosition(gx.span(2), gy.span(3));
             const board = Board().addChildTo(this).setPosition(gx.span(2), gy.span(6));
-            this.msgGroup = MsgGroup(shapeList).addChildTo(this).setPosition(gx.span(7), gy.span(5));
+            this.msgGroup = MsgGroup(shapeList).addChildTo(this).setPosition(gx.span(7), gy.span(6));
             // this.exit(param); //gameover
             // Button().addChildTo(this).onpush = () => this.nextPhase();
             this.phaseLabel = Label({fontSize: conf.FONT_SIZE}).addChildTo(this).setPosition(gx.span(5), gy.span(2));
@@ -21,11 +21,10 @@ export default (phina, conf, socket) => {
             socket.on('response assignment', (visiblePosArr, movablePosArr) => {
                 board.drawVisibleObj(visiblePosArr,param.isHost);
                 board.drawMovableCell(movablePosArr);
+                roundLabel.nextRound();
                 this.nextPhase(); //nextphase
             });
-            socket.on('response messaging', (msg) => {
-                this.nextPhase();
-            });
+            socket.on('finish messaging', () => this.nextPhase());
         },
         initPhase: function () { 
             if (!this.phase) {
@@ -37,11 +36,11 @@ export default (phina, conf, socket) => {
         nextPhase: function () {
             switch (this.phase) {
                 case 'assignmnent':
-                    this.msgGroup.setEnabled(true);
+                    // this.msgGroup.setEnabled(true);
                     this.phase = 'messaging';
                     break;
                 case 'messaging':
-                    this.msgGroup.setEnabled(false);
+                    // this.msgGroup.setEnabled(false);
                     this.phase = 'moving';
                     break;
                 case 'moving':
@@ -171,6 +170,13 @@ export default (phina, conf, socket) => {
                 y: conf.MSG_FRAME_SIZE * 0.8,
             }).addChildTo(parent);
             btn.onpush = () => {
+                // 送信ボタンと自分のフレームのクリック判定をオフ
+                btn.setInteractive(false);
+                btn.fill = conf.DISABLE_BUTTON_COLOR;
+                parent.children.forEach((frame) => {
+                    frame.setInteractive(false);
+                });
+                //　メッセージをサーバーに送信
                 const sendShapeList = this.currentShapeIndexList.map((currentShapeIndex) => {
                     return shapeList[currentShapeIndex];
                 });
@@ -178,12 +184,11 @@ export default (phina, conf, socket) => {
             };
         },
         setEnabled: function (bool) {
-            // if (bool === true) this.show();
-            // else this.hide();
-            this.children.forEach((child) => {
-                child.setInteractive(bool);
+            this.children.forEach((msgField) => {
+                msgField.children.forEach((grandChild) => {
+                    grandChild.setInteractive(bool); //　grandChild=frameやbtn
+                });
             });
-            // this.setInteractive(bool);
         },
     });
 
@@ -191,11 +196,18 @@ export default (phina, conf, socket) => {
         superClass: 'Label',
         init: function () {
             this.superInit({
-                text: 'ROUND: 0',
+                text: '',
                 fill: conf.FONT_COLOR,
                 fontSize: conf.FONT_SIZE,
             });
+            this.round = 0;
         },
+        update: function () {
+            this.text = 'ROUND: ' + this.round;
+        },
+        nextRound: function () {
+            this.round++;
+        }
     });
 
     phina.define('Score', {
@@ -319,7 +331,8 @@ export default (phina, conf, socket) => {
                 text: 'SEND',
                 fontSize: conf.FONT_SIZE,
                 fill: conf.ENABLE_BUTTON_COLOR,
-                x: -200
+                x: conf.GRID_SIZE,
+                y: conf.GRID_SIZE * conf.CELL_NUM_Y,
             }).addChildTo(this);
             this.btn.onpush = () => {
                 // this.selfAvater.show();
@@ -378,12 +391,6 @@ export default (phina, conf, socket) => {
                 strokeWidth: 10,
             });
         },
-        // superClass: 'Label',
-        // init: function (isSelf) {
-        //     this.superInit({
-        //         text: isSelf ? 'H' : 'G',
-        //     });
-        // },
     });
 
     phina.define('Player', {

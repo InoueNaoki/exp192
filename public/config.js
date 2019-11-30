@@ -46,4 +46,4 @@ export default {
 // const CELL_SIZE = conf.GRID_SIZE; // パネルの大きさ
 // const WALL_WIDTH = 10;
 // const CELL_COLOR = BACKGROUND_COLOR;
-// const zWALL_COLOR = 'black';
+// const WALL_COLOR = 'black';

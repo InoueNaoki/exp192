@@ -20,8 +20,6 @@ export default (phina, conf, socket)=> {
                 label.text = conf.COMPLETE_MATCHMAKE_MSG;
                 label.fill = 'seagreen';
                 loading.remove();
-                // param.visiblePosArr = initialVisiblePosArr;
-                // param.movablePosArr = initialMovablePosArr;
                 param.pairId = pairId;
                 param.isHost = isHost;
                 param.hostId = hostId;
