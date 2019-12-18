@@ -72,12 +72,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    /* assignmentフェーズ: Hostのみがrequest */
-    socket.on('request assignment', async () => {
+    /* placementフェーズ: Hostのみがrequest */
+    socket.on('request placement', async () => {
         const guestId = await getGuestId(socket.id);
         const initialPosDic = createInitialPosDic(9);
-        socket.emit('response assignment', getVisibleDic(initialPosDic, true), getMovableList(initialPosDic.host));　//ホストの部屋割当情報をホストクライアントに送信
-        socket.to(guestId).emit('response assignment', getVisibleDic(initialPosDic, false), getMovableList(initialPosDic.guest)); //ゲストの部屋割当情報をゲストクライアントに送信
+        socket.emit('response placement', getVisibleDic(initialPosDic, true), getMovableList(initialPosDic.host));　//ホストの部屋割当情報をホストクライアントに送信
+        socket.to(guestId).emit('response placement', getVisibleDic(initialPosDic, false), getMovableList(initialPosDic.guest)); //ゲストの部屋割当情報をゲストクライアントに送信
         logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPosDic));
     });
 
@@ -96,16 +96,17 @@ io.on('connection', (socket) => {
     });
 
     /* movingフェーズ: お互いが任意の時間にrequest */
-    socket.on('request moving', async (dest) => {
+    socket.on('request moving', async (dest,round,sec) => {
         const pairId = await getPairId(socket.id);
         // const partnerId = await getPartnerId(socket.id);
-        logger.info('[game]' + socket.id + ' move to ' + dest + ' at room' + pairId);
-        await updateStatus(pairId);
-        if (await selectCurrentStatus(pairId) === 'DONE') {
-            socket.to(pairId).emit('finish moving');
-            socket.emit('finish moving'); // messagingと同じく自分にemitされなかったので
-            await updateStatus(pairId);
-        };
+        logger.info('[game]' + socket.id + ' move to ' + dest+','+round+','+ sec+ ' at room' + pairId);
+        
+        // await updateStatus(pairId);
+        // if (await selectCurrentStatus(pairId) === 'DONE') {
+        //     socket.to(pairId).emit('finish moving');
+        //     socket.emit('finish moving'); // messagingと同じく自分にemitされなかったので
+        //     await updateStatus(pairId);
+        // };
     });
 
     /* judgementフェーズ: Hostのみがrequest */
@@ -223,8 +224,7 @@ function createInitialPosDic() {
         host: shuffledSeq[1],
         guest: shuffledSeq[2],
     };
-    return {reward: 3, host: 4, guest: 5};
-    // return initialPosDic;
+    return initialPosDic;
 }
 
 function shuffle(arr) {

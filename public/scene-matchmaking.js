@@ -25,7 +25,7 @@ export default (phina, conf, socket)=> {
                 param.hostId = hostId;
                 param.guestId = guestId;
                 // await wait(1);
-                this.exit(param);// to AssignmentScene
+                this.exit(param);// to placementScene
             });
         },
     });
