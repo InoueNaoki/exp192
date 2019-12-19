@@ -2,16 +2,18 @@ export default (phina, conf, socket) => {
     // let currentShapeIndex = 0;
     // const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
     // const NumData = {};
-    const globalGameData = {
-        round: 0,
+    const currentDic = {
+        round: 1,
         score: 0,
         time: 0,
-        label: Label({ text: 'some messages here', align: 'left'})
+        phase: 'placement',
     };
+    const historyList = [];
+    const notificationLabel = Label({ text: '> default messages', align: 'left' });
     phina.define('GameScene', {
         superClass: 'DisplayScene',
         init: function (param) {
-            if (param.isHost) socket.emit('request placement');
+            if (param.isHost) socket.emit('request placement', currentDic.round);
             const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
@@ -19,51 +21,53 @@ export default (phina, conf, socket) => {
             Timer().addChildTo(this).setPosition(gx.span(1), gy.span(1));
             const roundLabel = Round().addChildTo(this).setPosition(gx.span(1), gy.span(2));
             Score().addChildTo(this).setPosition(gx.span(1), gy.span(3));
-            
             this.board = Board().addChildTo(this).setPosition(gx.span(2), gy.span(6));
             this.board.setEnabled(false);
             this.msgGroup = MsgGroup(shapeList).addChildTo(this).setPosition(gx.span(7), gy.span(6));
             // this.exit(param); //gameover
-            // Button().addChildTo(this).onpush = () => this.nextPhase();
-            this.phaseLabel = Label({ fontSize: conf.FONT_SIZE }).addChildTo(this).setPosition(gx.span(5), gy.span(2));
-            globalGameData.label.addChildTo(this).setPosition(gx.span(5), gy.span(3));
-            this.initPhase();
+            this.phaseLabel = Label({
+                text: 'default',
+                fontSize: conf.FONT_SIZE
+            }).addChildTo(this).setPosition(gx.span(5), gy.span(2));
+            notificationLabel.addChildTo(this).setPosition(gx.span(1), gy.span(15));
+            // this.initPhase();
             socket.on('response placement', (visiblePosDic, movablePosList) => {
                 this.board.drawVisibleObj(visiblePosDic);
                 this.board.drawMovableCell(movablePosList, visiblePosDic);
-                roundLabel.nextRound();
+                // roundLabel.nextRound();
                 this.nextPhase(); //nextphase
             });
             socket.on('finish messaging', () => this.nextPhase());
+            socket.on('finish moving', () => this.nextPhase());
         },
-        initPhase: function () { 
-            if (!this.phase) {
-                this.phase = 'assignmnent';
-                this.phaseLabel.text = this.phase;
-            }
-            else console.error("すでに値が挿入されています");
-        },
+        // initPhase: function () { 
+        //     if (!this.phase) {
+        //         this.phase = 'placement';
+        //         this.phaseLabel.text = this.phase;
+        //     }
+        //     else console.error("すでに値が挿入されています");
+        // },
         nextPhase: function () {
-            switch (this.phase) {
-                case 'assignmnent':
+            switch (currentDic.phase) {
+                case 'placement':
                     // this.msgGroup.setEnabled(true);
-                    this.phase = 'messaging';
+                    currentDic.phase = 'messaging';
                     break;
                 case 'messaging':
                     this.board.setEnabled(true);
-                    this.phase = 'moving';
+                    currentDic.phase = 'moving';
                     break;
                 case 'moving':
-                    this.phase = 'judgment';
+                    currentDic.phase = 'judgment';
                     break;
                 case 'judgment':
-                    this.phase = 'assignmnent';
+                    currentDic.phase = 'placement';
                     break;
                 default:
                     console.error('invaild phase name');
                     break;
             }
-            this.phaseLabel.text = this.phase;
+            this.phaseLabel.text = currentDic.phase;
         },
     });
 
@@ -190,7 +194,8 @@ export default (phina, conf, socket) => {
                     }, 30, 'easeOutInElastic');
                     Label({
                         text: 'メッセージを全て入力してから\n送信してください',
-                        fill: 'red',
+                        fill: 'crimson',
+                        fontSize: conf.FONT_SIZE,
                         backgroundColor: 'white',
                         x: conf.MSG_FRAME_SIZE * conf.MSG_NUM / 4,
                     }).addChildTo(parent).tweener.wait(500).fadeOut(500).play();
@@ -206,7 +211,7 @@ export default (phina, conf, socket) => {
                     const sendShapeList = this.currentShapeIndexList.map((currentShapeIndex) => {
                         return shapeList[currentShapeIndex];
                     });
-                    socket.emit('request messaging', sendShapeList);
+                    socket.emit('request messaging', sendShapeList, currentDic);
                 }
             };
         },
@@ -230,11 +235,8 @@ export default (phina, conf, socket) => {
             });
         },
         update: function () {
-            this.text = 'ROUND: ' + globalGameData.round;
+            this.text = 'ROUND: ' + currentDic.round;
         },
-        nextRound: function () {
-            globalGameData.round++;
-        }
     });
 
     phina.define('Score', {
@@ -261,8 +263,8 @@ export default (phina, conf, socket) => {
             // globalGameData.time = 0;
         },
         update: function (app) {
-            globalGameData.time += app.deltaTime;
-            const time = globalGameData.time / 1000;
+            currentDic.time += app.deltaTime;
+            const time = currentDic.time / 1000;
             const min = ('00' + Math.floor(time / 60)).slice(-2);
             const sec = ('00' + Math.floor(time % 60)).slice(-2);
             this.text = 'TIME: ' + min + ':' + sec; // 経過秒数表示
@@ -372,12 +374,12 @@ export default (phina, conf, socket) => {
                 fontSize: conf.FONT_SIZE,
                 fill: conf.ENABLE_BUTTON_COLOR,
                 x: conf.GRID_SIZE,
-                y: conf.GRID_SIZE * conf.CELL_NUM_Y,
+                y: (conf.GRID_SIZE * conf.CELL_NUM_Y) - (conf.GRID_SIZE / 4),
             }).addChildTo(this);
             this.btn.onpush = () => {
                 this.btn.setInteractive(false);
                 this.btn.fill = conf.DISABLE_BUTTON_COLOR;
-                socket.emit('request moving', this.dest, globalGameData.round, globalGameData.time / 1000);
+                socket.emit('request moving', this.dest, currentDic);
             }
         },
         setEnabled: function (bool) {
