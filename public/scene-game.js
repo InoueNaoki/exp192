@@ -2,7 +2,7 @@ export default (phina, conf, socket) => {
     // let currentShapeIndex = 0;
     // const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
     // const NumData = {};
-    const currentDic = {
+    const dynamicParam = {
         round: 1,
         score: 0,
         time: 0,
@@ -12,8 +12,9 @@ export default (phina, conf, socket) => {
     const notificationLabel = Label({ text: '> default messages', align: 'left' });
     phina.define('GameScene', {
         superClass: 'DisplayScene',
-        init: function (param) {
-            if (param.isHost) socket.emit('request placement', currentDic.round);
+        init: function (staticParam) {
+            if (staticParam.isHost) socket.emit('request placement', dynamicParam.round);
+            console.log(staticParam);
             const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
@@ -34,11 +35,16 @@ export default (phina, conf, socket) => {
             socket.on('response placement', (visiblePosDic, movablePosList) => {
                 this.board.drawVisibleObj(visiblePosDic);
                 this.board.drawMovableCell(movablePosList, visiblePosDic);
-                // roundLabel.nextRound();
                 this.nextPhase(); //nextphase
             });
             socket.on('finish messaging', () => this.nextPhase());
             socket.on('finish moving', () => this.nextPhase());
+            socket.on('response judgment', (judgmentResult) => {
+                console.log(judgmentResult);
+                dynamicParam.phase = judgmentResult.nextPhase;
+                this.phaseLabel.text = dynamicParam.phase;
+                dynamicParam.round++;
+            });
         },
         // initPhase: function () { 
         //     if (!this.phase) {
@@ -47,27 +53,27 @@ export default (phina, conf, socket) => {
         //     }
         //     else console.error("すでに値が挿入されています");
         // },
-        nextPhase: function () {
-            switch (currentDic.phase) {
+        nextPhase: function (judgmentResult = null) {
+            switch (dynamicParam.phase) {
                 case 'placement':
                     // this.msgGroup.setEnabled(true);
-                    currentDic.phase = 'messaging';
+                    dynamicParam.phase = 'messaging';
                     break;
                 case 'messaging':
                     this.board.setEnabled(true);
-                    currentDic.phase = 'moving';
+                    dynamicParam.phase = 'moving';
                     break;
                 case 'moving':
-                    currentDic.phase = 'judgment';
+                    dynamicParam.phase = 'judgment';
                     break;
-                case 'judgment':
-                    currentDic.phase = 'placement';
-                    break;
+                // case 'judgment':
+                //     dynamicParam.phase = 'placement';
+                //     break;
                 default:
                     console.error('invaild phase name');
                     break;
             }
-            this.phaseLabel.text = currentDic.phase;
+            this.phaseLabel.text = dynamicParam.phase;
         },
     });
 
@@ -211,7 +217,7 @@ export default (phina, conf, socket) => {
                     const sendShapeList = this.currentShapeIndexList.map((currentShapeIndex) => {
                         return shapeList[currentShapeIndex];
                     });
-                    socket.emit('request messaging', sendShapeList, currentDic);
+                    socket.emit('request messaging', sendShapeList, dynamicParam);
                 }
             };
         },
@@ -235,7 +241,7 @@ export default (phina, conf, socket) => {
             });
         },
         update: function () {
-            this.text = 'ROUND: ' + currentDic.round;
+            this.text = 'ROUND: ' + dynamicParam.round;
         },
     });
 
@@ -263,8 +269,8 @@ export default (phina, conf, socket) => {
             // globalGameData.time = 0;
         },
         update: function (app) {
-            currentDic.time += app.deltaTime;
-            const time = currentDic.time / 1000;
+            dynamicParam.time += app.deltaTime;
+            const time = dynamicParam.time / 1000;
             const min = ('00' + Math.floor(time / 60)).slice(-2);
             const sec = ('00' + Math.floor(time % 60)).slice(-2);
             this.text = 'TIME: ' + min + ':' + sec; // 経過秒数表示
@@ -379,7 +385,7 @@ export default (phina, conf, socket) => {
             this.btn.onpush = () => {
                 this.btn.setInteractive(false);
                 this.btn.fill = conf.DISABLE_BUTTON_COLOR;
-                socket.emit('request moving', this.dest, currentDic);
+                socket.emit('request moving', this.dest, dynamicParam);
             }
         },
         setEnabled: function (bool) {

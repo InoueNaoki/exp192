@@ -35,8 +35,8 @@ CREATE TABLE IF NOT EXISTS pairs(
     CONSTRAINT fk_guest_id FOREIGN KEY(guest_id) REFERENCES players(id) ON DELETE RESTRICT ON UPDATE CASCADE
 ) engine = innodb DEFAULT charset = utf8 COLLATE = utf8_unicode_ci AUTO_INCREMENT = 1;
 
--- 各ペアの各ラウンドの位置情報の管理用テーブル
-CREATE TABLE IF NOT EXISTS positions(
+-- ペア内で共通のゲーム情報の管理用テーブル
+CREATE TABLE IF NOT EXISTS commons(
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     pair_id INT UNSIGNED NOT NULL, 
     current_round INT UNSIGNED NOT NULL,
@@ -50,8 +50,8 @@ CREATE TABLE IF NOT EXISTS positions(
     CONSTRAINT fk_positions_pair_id FOREIGN KEY(pair_id) REFERENCES pairs(id) ON DELETE RESTRICT ON UPDATE CASCADE
 ) engine = innodb DEFAULT charset = utf8 COLLATE = utf8_unicode_ci AUTO_INCREMENT = 1;
 
--- 各ユーザーの各ラウンドのゲーム情報の管理用テーブル
-CREATE TABLE IF NOT EXISTS tasks(
+-- 各プレイヤーのゲーム情報の管理用テーブル
+CREATE TABLE IF NOT EXISTS personals(
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     player_id VARCHAR(20) NOT NULL,
     pair_id INT UNSIGNED NOT NULL, 

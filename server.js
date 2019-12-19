@@ -45,7 +45,6 @@ io.on('connection', async (socket) => {
         socket.join(conf.LOBBY_NAME); // 待機ロビーに入室
         logger.info('[socket.io]' + socket.id + ' joined lobby');
         await sql('INSERT INTO players SET id = ?', [socket.id]);
-        // const playerId = insertPlayerRecord['insertId'];
         // logger.info('[socket.io]' + socket.id + ' changed socket.id to ' + player.name);
         const mostWaitingPairId = (await sql('SELECT MIN(id) FROM pairs WHERE guest_id IS NULL'))[0]['MIN(id)'];
         if (!mostWaitingPairId) { 
@@ -73,7 +72,6 @@ io.on('connection', async (socket) => {
     /* placementフェーズ: Hostのみがrequest */
     await socket.on('request placement', async (round) => {
         const pairId = await getPairId(socket.id);
-        // const guestId = await getGuestId(socket.id);
         const initialPre = createInitialPosDic(9);
         await sql('INSERT INTO positions (pair_id, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, round, initialPre.reward, initialPre.host, initialPre.guest]]);
         socket.emit('response placement', getVisibleDic(initialPre, true), getMovableList(initialPre.host));　//ホストの部屋割当情報をホストクライアントに送信
@@ -84,7 +82,6 @@ io.on('connection', async (socket) => {
     /* messagingフェーズ: お互いが任意の時間にrequest　*/
     await socket.on('request messaging', async (msg, game) => {
         const pairId = await getPairId(socket.id);
-        // const partnerId = await getPartnerId(socket.id);
         socket.broadcast.to(pairId).emit('response messaging', msg);
         // logger.info('[game]' + socket.id + ' send message ' + JSON.stringify(msg) + ' at room' + pairId);
         //後手かどうか
@@ -93,7 +90,7 @@ io.on('connection', async (socket) => {
         const msgArr = [msg[0].id, msg[1].id];
         await sql('INSERT INTO tasks (player_id, pair_id, current_round, score, is_first, message_at, ??) VALUE (?,?)', [msgColumnArr, [socket.id, pairId, game.round, game.score, !isSecond, game.time], msgArr]);
         if (isSecond) {
-            socket.to(pairId).emit('finish messaging'); //これだけだと自分にemitされない　なぜ？
+            socket.to(pairId).emit('finish messaging'); //これだけだと自分にemitされない　そういう仕様なのかも？
             socket.emit('finish messaging'); // 自分にemitされなかったので
         }
     });
@@ -103,25 +100,30 @@ io.on('connection', async (socket) => {
         // const pairId = await getPairId(socket.id);
         // const partnerId = await getPartnerId(socket.id);
         const pairId = await getPairId(socket.id);
-        const playerPostColumnName = await getIsHost(socket.id) ? 'host_post' : 'guest_post';
+        const isHost =  await getIsHost(socket.id);
+        const playerPostColumnName = isHost ? 'host_post' : 'guest_post';
         await sql('UPDATE positions SET ?? = ? WHERE current_round = ? AND pair_id = ?', [playerPostColumnName, dest, game.round, pairId]);
         //後手かどうか
         const isSecond = Object.values((await sql('SELECT EXISTS(SELECT * FROM positions WHERE host_post IS NOT NULL AND guest_post IS NOT NULL AND pair_id = ? AND current_round = ?)', [pairId, game.round]))[0])[0];
         if (isSecond) {
-            console.log("じゃっじする");
             socket.to(pairId).emit('finish moving'); //これだけだと自分にemitされない
             socket.emit('finish moving'); // 自分にemitされなかったので
-            const post = (await sql('SELECT reward,host_post,guest_post FROM positions WHERE current_round = ? AND pair_id = ?', [game.round, pairId]))[0];
-            console.log(post);
+            const selectPost = (await sql('SELECT reward,host_post,guest_post FROM positions WHERE current_round = ? AND pair_id = ?', [game.round, pairId]))[0];
+            
+            const judgment = await judge(selectPost.reward, selectPost.host_post, selectPost.guest_post, game.round, pairId);
+            const playerResult = await isHost ? judgment.hostResult : judgment.guestResult;
+            const partnerResult = await isHost ? judgment.guestResult : judgment.hostResult;
+            await socket.to(pairId).emit('response judgment', partnerResult); //パートナーに
+            await socket.emit('response judgment', playerResult); // 自分に
         }
     });
 
-    /* judgementフェーズ: Hostのみがrequest */
-    await socket.on('request judgement', async () => {
-        const guestId = await getGuestId(socket.id);
-        socket.emit('response judgement');
-        // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPre));
-    });
+    // /* judgmentフェーズ: Hostのみがrequest */
+    // await socket.on('request judgment', async () => {
+    //     const guestId = await getGuestId(socket.id);
+    //     socket.emit('response judgment');
+    //     // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPre));
+    // });
 
     /* ソケット切断時の処理 */
     socket.on('disconnect', async () => {
@@ -136,23 +138,41 @@ http.listen(port, ip, () => {
     logger.info('[nodejs]ip:' + ip);
 });
 
-// /**
-//  * MySQLにSQL文を投げる関数
-//  * @param {String} sqlStatement SQL文 
-//  */
-// async function sqlQuery(sqlStatement) {
-//     logger.trace('[mysql]' + sqlStatement);//投げられた文をトレース
-//     const pool = mysql.createPool(dbConfig);
-//     pool.query = util.promisify(pool.query);
-//     try {
-//         const result = await pool.query(sqlStatement);
-//         logger.trace('[mysql]' + JSON.stringify(result)); //実行結果を返す．そのまま連結すると中身が見れなくなるのでJSON.stringify()を使用
-//         pool.end();
-//         return result;
-//     } catch (err) {
-//         throw logger.error(err);
-//     }
-// }
+async function judge(reward, host, guest, round, pairId) {
+    const hostResult = {
+        name: 'continuation',
+        incremental: conf.payoff.continuation,
+        nextPhase: 'messaging'
+    };
+    const guestResult = {
+        name: 'continuation',
+        incremental: conf.payoff.continuation,
+        nextPhase: 'messaging'
+    };
+    if (reward === host && reward === guest) {
+        hostResult.name = 'sharing';
+        hostResult.incremental = conf.payoff.sharing;
+        hostResult.nextPhase = 'placement';
+        guestResult.name = 'sharing';
+        guestResult.incremental = conf.payoff.sharing;
+        guestResult.nextPhase = 'placement';
+    }
+    else if (reward === host) {
+        hostResult.name = 'monopoly';
+        hostResult.incremental = conf.payoff.monopoly;
+        hostResult.nextPhase = 'placement';
+    }
+    else if (reward === guest) {
+        guestResult.name = 'monopoly';
+        guestResult.incremental = conf.payoff.monopoly;
+        guestResult.nextPhase = 'placement';
+    }
+    else {
+        // placementの代わりにinsert
+        await sql('INSERT INTO positions (pair_id, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, round+1, reward, host, guest]]);
+    }
+    return { hostResult, guestResult };
+}
 
 /**
  * MySQLにSQL文を投げる関数 sqlインジェクション対策版
@@ -172,25 +192,6 @@ async function sql(sqlStatement, placeholder) {
     }
 }
 
-// /**
-//  * 
-//  * @param {String} socketId socket.id
-//  */
-// async function selectCurrentStatus(pairId) {
-//     // const pairId = await getPairId(socketId);
-//     const result = await sqlQuery(`SELECT status FROM pairs WHERE id = "${pairId}";`);
-//     return result[0]['status'];
-// }
-
-// /**
-//  * 次のstatusにする関数 DEFAULT(先手・後手待ち)→WAITING(先手完了，後手待ち)→DONE(先手・後手完了)→(次のフェーズの)DEFAULT...のループ
-//  * @param {String} socketId socket.id
-//  */
-// async function updateStatus(pairId) {
-//     // const pairId = await getPairId(socketId);
-//     await sqlQuery(`UPDATE pairs SET status = IF(status = "DEFAULT","WAITING",IF(status = "WAITING" ,"DONE","DEFAULT")) WHERE id = "${pairId}";`);
-// }
-
 /**
  * Hostかどうかを返す(boolean)関数
  * @param {String} socketId socket.id
@@ -200,22 +201,6 @@ async function getIsHost(socketId) {
     const result = await sql('SELECT is_host FROM players WHERE id = ?', [socketId]);
     return result[0]['is_host'];
 }
-
-// /**
-//  * パートナーのsocket.idを返す関数
-//  * @param {String} socketId 自分のsocket.id
-//  * @return {String} パートナーのsocket.id
-//  */
-// async function getPartnerId(socketId) {
-//     if (await getIsHost(socketId)) {
-//         const result = await sqlQuery(`SELECT guest_id FROM pairs WHERE host_id = "${socketId}";`);
-//         return result[0]['guest_id'];
-//     }
-//     else {
-//         const result = await sqlQuery(`SELECT host_id FROM pairs WHERE guest_id = "${socketId}";`);
-//         return result[0]['host_id'];
-//     }
-// }
 
 /**
  * hostIdを入力するとguestIdを返す関数
@@ -308,13 +293,6 @@ function getVisibleDic(posDic, isHost) {
     };
     return VisibleDic;
 }
-
-// function getIsMovableArr(currentPos) {
-//     const CELL_NUM = 9;
-//     return [...Array(CELL_NUM)].map((_, i) => {
-//         return isAdjacentCell(currentPos, i) || isSameCell(currentPos, i);
-//     });
-// }
 
 function getMovableList(currentPosi) {
     const CELL_NUM = 9;
