@@ -41,19 +41,13 @@ export default (phina, conf, socket) => {
             socket.on('finish moving', () => this.nextPhase());
             socket.on('response judgment', (judgmentResult) => {
                 console.log(judgmentResult);
-                dynamicParam.phase = judgmentResult.nextPhase;
-                this.phaseLabel.text = dynamicParam.phase;
+                console.log(dynamicParam);
+                dynamicParam.score += judgmentResult.incremental;
                 dynamicParam.round++;
+                this.nextPhase(judgmentResult.nextPhase);
             });
         },
-        // initPhase: function () { 
-        //     if (!this.phase) {
-        //         this.phase = 'placement';
-        //         this.phaseLabel.text = this.phase;
-        //     }
-        //     else console.error("すでに値が挿入されています");
-        // },
-        nextPhase: function (judgmentResult = null) {
+        nextPhase: function (next = 'error') {
             switch (dynamicParam.phase) {
                 case 'placement':
                     // this.msgGroup.setEnabled(true);
@@ -66,9 +60,9 @@ export default (phina, conf, socket) => {
                 case 'moving':
                     dynamicParam.phase = 'judgment';
                     break;
-                // case 'judgment':
-                //     dynamicParam.phase = 'placement';
-                //     break;
+                case 'judgment':
+                    dynamicParam.phase = next;
+                    break;
                 default:
                     console.error('invaild phase name');
                     break;
@@ -249,11 +243,14 @@ export default (phina, conf, socket) => {
         superClass: 'Label',
         init: function () {
             this.superInit({
-                text: 'SCORE: 0',
+                text: '',
                 align: 'left',
                 fill: conf.FONT_COLOR,
                 fontSize: conf.FONT_SIZE,
             });
+        },
+        update: function () {
+            this.text = 'SCORE: ' + dynamicParam.score;
         },
     });
 
@@ -330,6 +327,7 @@ export default (phina, conf, socket) => {
             this.rewardAvater = Reward();
             this.partnerAvater = Player(false);
             this.selfAvater = Player(true);
+            this.selfAvaterShadow = PlayerShadow(true);
             this.destSendButton();
         },
         drawVisibleObj: function (visiblePosDic) {

@@ -51,17 +51,18 @@ io.on('connection', async (socket) => {
             // Hosts
             await sql('UPDATE players SET is_host = true WHERE id = ?', [socket.id]);
             const pairId = (await sql('INSERT INTO pairs SET host_id = ?', [socket.id]))['insertId'];
-            logger.info('[game]' + socket.id + ' is host of room' + pairId);
+            // logger.info('[game]' + socket.id + ' is host of room' + pairId);
             socket.join(pairId);
             socket.leave(conf.LOBBY_NAME);
         } else {
             // Guest
             const pairId = mostWaitingPairId;
             await sql('UPDATE pairs SET guest_id = ? WHERE id = ?', [socket.id, pairId]);
-            await sql('UPDATE players SET is_host = false WHERE id = ?', [socket.id]);
             const hostId = (await sql('SELECT host_id FROM pairs WHERE id = ?', [pairId]))[0]['host_id'];
-            logger.info('[game]' + socket.id + ' is guest of room' + pairId);
-            logger.info('[game] pair' + pairId + ' matchmaking complete (host:' + hostId+', guest:'+socket.id+')')
+            await sql('UPDATE players SET is_host = false, partner_id = ? WHERE id = ?', [hostId, socket.id]);
+            await sql('UPDATE players SET partner_id = ? WHERE id = ?', [socket.id, hostId]); //hostのパートナーは自分
+            // logger.info('[game]' + socket.id + ' is guest of room' + pairId);
+            // logger.info('[game] pair' + pairId + ' matchmaking complete (host:' + hostId+', guest:'+socket.id+')')
             socket.join(pairId);
             socket.leave(conf.LOBBY_NAME);
             socket.to(hostId).emit('finish matchmaking', pairId, true, hostId, socket.id);//ホスト(部屋全体)にもマッチング完了を伝える
@@ -73,7 +74,7 @@ io.on('connection', async (socket) => {
     await socket.on('request placement', async (round) => {
         const pairId = await getPairId(socket.id);
         const initialPre = createInitialPosDic(9);
-        await sql('INSERT INTO positions (pair_id, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, round, initialPre.reward, initialPre.host, initialPre.guest]]);
+        await sql('INSERT INTO commons (pair_id, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, round, initialPre.reward, initialPre.host, initialPre.guest]]);
         socket.emit('response placement', getVisibleDic(initialPre, true), getMovableList(initialPre.host));　//ホストの部屋割当情報をホストクライアントに送信
         socket.to(pairId).emit('response placement', getVisibleDic(initialPre, false), getMovableList(initialPre.guest)); //ゲストの部屋割当情報をゲストクライアントに送信
         // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPre));
@@ -85,10 +86,10 @@ io.on('connection', async (socket) => {
         socket.broadcast.to(pairId).emit('response messaging', msg);
         // logger.info('[game]' + socket.id + ' send message ' + JSON.stringify(msg) + ' at room' + pairId);
         //後手かどうか
-        const isSecond = Object.values((await sql('SELECT EXISTS(SELECT * FROM tasks WHERE pair_id = ? AND current_round = ?)', [pairId, game.round]))[0])[0];
+        const isSecond = Object.values((await sql('SELECT EXISTS(SELECT * FROM personals WHERE pair_id = ? AND current_round = ?)', [pairId, game.round]))[0])[0];
         const msgColumnArr = ['message0', 'message1']; //msg数を可変にするならこの辺いじる
         const msgArr = [msg[0].id, msg[1].id];
-        await sql('INSERT INTO tasks (player_id, pair_id, current_round, score, is_first, message_at, ??) VALUE (?,?)', [msgColumnArr, [socket.id, pairId, game.round, game.score, !isSecond, game.time], msgArr]);
+        await sql('INSERT INTO personals (player_id, pair_id, current_round, score, is_first, message_at, ??) VALUE (?,?)', [msgColumnArr, [socket.id, pairId, game.round, game.score, !isSecond, game.time], msgArr]);
         if (isSecond) {
             socket.to(pairId).emit('finish messaging'); //これだけだと自分にemitされない　そういう仕様なのかも？
             socket.emit('finish messaging'); // 自分にemitされなかったので
@@ -102,28 +103,24 @@ io.on('connection', async (socket) => {
         const pairId = await getPairId(socket.id);
         const isHost =  await getIsHost(socket.id);
         const playerPostColumnName = isHost ? 'host_post' : 'guest_post';
-        await sql('UPDATE positions SET ?? = ? WHERE current_round = ? AND pair_id = ?', [playerPostColumnName, dest, game.round, pairId]);
+        await sql('UPDATE commons SET ?? = ? WHERE current_round = ? AND pair_id = ?', [playerPostColumnName, dest, game.round, pairId]);
         //後手かどうか
-        const isSecond = Object.values((await sql('SELECT EXISTS(SELECT * FROM positions WHERE host_post IS NOT NULL AND guest_post IS NOT NULL AND pair_id = ? AND current_round = ?)', [pairId, game.round]))[0])[0];
+        const isSecond = Object.values((await sql('SELECT EXISTS(SELECT * FROM commons WHERE host_post IS NOT NULL AND guest_post IS NOT NULL AND pair_id = ? AND current_round = ?)', [pairId, game.round]))[0])[0];
         if (isSecond) {
             socket.to(pairId).emit('finish moving'); //これだけだと自分にemitされない
             socket.emit('finish moving'); // 自分にemitされなかったので
-            const selectPost = (await sql('SELECT reward,host_post,guest_post FROM positions WHERE current_round = ? AND pair_id = ?', [game.round, pairId]))[0];
-            
+            const selectPost = (await sql('SELECT reward,host_post,guest_post FROM commons WHERE current_round = ? AND pair_id = ?', [game.round, pairId]))[0];
             const judgment = await judge(selectPost.reward, selectPost.host_post, selectPost.guest_post, game.round, pairId);
+            console.log(judgment);
             const playerResult = await isHost ? judgment.hostResult : judgment.guestResult;
-            const partnerResult = await isHost ? judgment.guestResult : judgment.hostResult;
-            await socket.to(pairId).emit('response judgment', partnerResult); //パートナーに
+            await sql('UPDATE personals SET behavior = ?, behavior_at = ? WHERE current_round = ? AND player_id = ?', [playerResult.id, game.time, game.round, socket.id]);
             await socket.emit('response judgment', playerResult); // 自分に
+
+            const partnerResult = await isHost ? judgment.guestResult : judgment.hostResult;
+            await sql('UPDATE personals SET behavior = ?, behavior_at = ? WHERE current_round = ? AND player_id IN (SELECT partner_id FROM players WHERE id = ?)', [partnerResult.id, game.time, game.round, socket.id]);
+            await socket.to(pairId).emit('response judgment', partnerResult); //パートナーに
         }
     });
-
-    // /* judgmentフェーズ: Hostのみがrequest */
-    // await socket.on('request judgment', async () => {
-    //     const guestId = await getGuestId(socket.id);
-    //     socket.emit('response judgment');
-    //     // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPre));
-    // });
 
     /* ソケット切断時の処理 */
     socket.on('disconnect', async () => {
@@ -139,39 +136,59 @@ http.listen(port, ip, () => {
 });
 
 async function judge(reward, host, guest, round, pairId) {
-    const hostResult = {
-        name: 'continuation',
-        incremental: conf.payoff.continuation,
-        nextPhase: 'messaging'
+    const createResult = (judgmentName) => {
+        const result = {};
+        switch (judgmentName) {
+            case 'continuation':
+                result.id = 'c';
+                result.incremental = conf.payoff.continuation;
+                result.isGet = false;
+                result.nextPhase = 'messaging';
+                break;
+            case 'sharing':
+                result.id = 's';
+                result.incremental = conf.payoff.sharing;
+                result.isGet = true;
+                result.nextPhase = 'placement';
+                break;
+            case 'monopoly':
+                result.id = 'm';
+                result.incremental = conf.payoff.monopoly;
+                result.isGet = true;
+                result.nextPhase = 'placement';
+                break;
+            case 'failure':
+                result.id = 'f';
+                result.incremental = conf.payoff.failure;
+                result.isGet = false;
+                result.nextPhase = 'placement';
+                break;
+            default:
+                break;
+        }
+        return result;
     };
-    const guestResult = {
-        name: 'continuation',
-        incremental: conf.payoff.continuation,
-        nextPhase: 'messaging'
-    };
+    
+    const judgment = {};
     if (reward === host && reward === guest) {
-        hostResult.name = 'sharing';
-        hostResult.incremental = conf.payoff.sharing;
-        hostResult.nextPhase = 'placement';
-        guestResult.name = 'sharing';
-        guestResult.incremental = conf.payoff.sharing;
-        guestResult.nextPhase = 'placement';
+        judgment.hostResult = createResult('sharing');
+        judgment.guestResult = createResult('sharing');
     }
     else if (reward === host) {
-        hostResult.name = 'monopoly';
-        hostResult.incremental = conf.payoff.monopoly;
-        hostResult.nextPhase = 'placement';
+        judgment.hostResult = createResult('monopoly');
+        judgment.guestResult = createResult('failure');
     }
     else if (reward === guest) {
-        guestResult.name = 'monopoly';
-        guestResult.incremental = conf.payoff.monopoly;
-        guestResult.nextPhase = 'placement';
+        judgment.hostResult = createResult('failure');
+        judgment.guestResult = createResult('monopoly');
     }
     else {
-        // placementの代わりにinsert
-        await sql('INSERT INTO positions (pair_id, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, round+1, reward, host, guest]]);
+        judgment.hostResult = createResult('continuation');
+        judgment.guestResult = createResult('continuation');
+        // placementを経由しないのでの代わりに次のラウンドの位置情報をinsert
+        await sql('INSERT INTO commons (pair_id, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, round+1, reward, host, guest]]);
     }
-    return { hostResult, guestResult };
+    return judgment;
 }
 
 /**
@@ -212,6 +229,18 @@ async function getGuestId(hostId) {
     return result[0]['guest_id'];
 }
 
+// /**
+//  * socketIdを入力するとpartnerIdを返す関数
+//  * @param {String} socketId socket.id
+//  * @return {String} partnerId
+//  */
+// async function getGuestId(socketId, isHost) {
+//     const playerColumnName = isHost ? 'host_id' : 'guest_id';
+//     const partnerColumnName = isHost ? 'guest_id' : 'host_id';
+//     const result = await sql('SELECT guest_id FROM pairs WHERE host_id = ?', [hostId]);
+//     return result[0]['guest_id'];
+// }
+
 /**
  * socket.idが入室しているroom name(pairId)を返す関数
  * @param {String} socketId 自分のsocket.id
@@ -234,7 +263,12 @@ function createInitialPosDic() {
         host: shuffledSeq[1],
         guest: shuffledSeq[2],
     };
-    return initialPre;
+    return {
+        reward: 0,
+        host: 1,
+        guest: 1
+    };
+    // return initialPre;
 }
 
 function shuffle(arr) {
