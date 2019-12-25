@@ -7,9 +7,9 @@ export default (phina, conf, socket) => {
         score: 0,
         time: 0,
         phase: 'placement',
+        notification: '初期準備中...',
     };
     const historyList = [];
-    const notificationLabel = Label({ text: '> default messages', align: 'left' });
     phina.define('GameScene', {
         superClass: 'DisplayScene',
         init: function (staticParam) {
@@ -19,18 +19,16 @@ export default (phina, conf, socket) => {
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
             const gy = this.gridY;
-            Timer().addChildTo(this).setPosition(gx.span(1), gy.span(1));
-            const roundLabel = Round().addChildTo(this).setPosition(gx.span(1), gy.span(2));
-            Score().addChildTo(this).setPosition(gx.span(1), gy.span(3));
+            RoomLabel(staticParam.pairId).addChildTo(this).setPosition(gx.span(0), gy.span(0.5));
+            TimerLabel().addChildTo(this).setPosition(gx.span(0), gy.span(1.5));
+            RoundLabel().addChildTo(this).setPosition(gx.span(0), gy.span(2.5));
+            ScoreLabel().addChildTo(this).setPosition(gx.span(0), gy.span(3.5));
+            PhaseLabel().addChildTo(this).setPosition(gx.span(4), gy.span(0.5));
+            NotificationLabel().addChildTo(this).setPosition(gx.span(6), gy.span(2));
             this.board = Board().addChildTo(this).setPosition(gx.span(2), gy.span(6));
             this.board.setEnabled(false);
             this.msgGroup = MsgGroup(shapeList).addChildTo(this).setPosition(gx.span(7), gy.span(6));
             // this.exit(param); //gameover
-            this.phaseLabel = Label({
-                text: 'default',
-                fontSize: conf.FONT_SIZE
-            }).addChildTo(this).setPosition(gx.span(5), gy.span(2));
-            notificationLabel.addChildTo(this).setPosition(gx.span(1), gy.span(15));
             // this.initPhase();
             socket.on('response placement', (visiblePosDic, movablePosList) => {
                 this.board.drawVisibleObj(visiblePosDic);
@@ -42,9 +40,10 @@ export default (phina, conf, socket) => {
             socket.on('response judgment', (judgmentResult) => {
                 console.log(judgmentResult);
                 console.log(dynamicParam);
-                dynamicParam.score += judgmentResult.incremental;
+                dynamicParam.score += judgmentResult.increment;
                 dynamicParam.round++;
                 this.nextPhase(judgmentResult.nextPhase);
+                this.msgGroup.setEnabled(true);
             });
         },
         nextPhase: function (next = 'error') {
@@ -52,12 +51,15 @@ export default (phina, conf, socket) => {
                 case 'placement':
                     // this.msgGroup.setEnabled(true);
                     dynamicParam.phase = 'messaging';
+                    dynamicParam.notification = '図形を選択し，送信してください';
                     break;
                 case 'messaging':
+                    this.msgGroup.setEnabled(false);
                     this.board.setEnabled(true);
                     dynamicParam.phase = 'moving';
                     break;
                 case 'moving':
+                    this.board.setEnabled(false);
                     dynamicParam.phase = 'judgment';
                     break;
                 case 'judgment':
@@ -67,7 +69,6 @@ export default (phina, conf, socket) => {
                     console.error('invaild phase name');
                     break;
             }
-            this.phaseLabel.text = dynamicParam.phase;
         },
     });
 
@@ -91,8 +92,9 @@ export default (phina, conf, socket) => {
         },
         senderLabel: function (isSelfMsg,parent) {
             Label({
-                text: isSelfMsg ? 'YOU' : "PARTNER",
+                text: isSelfMsg ? '● あなた' : '● 相手',
                 fontSize: conf.FONT_SIZE,
+                fill: isSelfMsg ? conf.SELF_COLOR : conf.PARTNER_COLOR,
                 x: conf.MSG_FRAME_SIZE * conf.MSG_NUM / 4,
                 y: -conf.MSG_FRAME_SIZE * 0.8,
             }).addChildTo(parent);
@@ -176,34 +178,33 @@ export default (phina, conf, socket) => {
             }
         },
         msgSendButton: function (shapeList,parent) {
-            const btn = Button({
+            this.btn = Button({
                 text: 'SEND',
                 fontSize: conf.FONT_SIZE,
                 fill: conf.ENABLE_BUTTON_COLOR,
                 x: conf.MSG_FRAME_SIZE * conf.MSG_NUM / 4,
                 y: conf.MSG_FRAME_SIZE * 0.8,
             }).addChildTo(parent);
-            btn.onpush = () => {
+            this.btn.onpush = () => {
                 if (this.currentShapeIndexList.includes(undefined)) {
-                    btn.tweener.clear().by({
+                    this.btn.tweener.clear().by({
                         x: 20,
                     }, 30, 'easeOutInElastic').by({
                         x: -40,
                     }, 60, 'easeOutInElastic').by({
                         x: 20,
                     }, 30, 'easeOutInElastic');
-                    Label({
-                        text: 'メッセージを全て入力してから\n送信してください',
-                        fill: 'crimson',
-                        fontSize: conf.FONT_SIZE,
-                        backgroundColor: 'white',
-                        x: conf.MSG_FRAME_SIZE * conf.MSG_NUM / 4,
-                    }).addChildTo(parent).tweener.wait(500).fadeOut(500).play();
+                    dynamicParam.notification = 'メッセージを全て入力してから送信してください';
+                    // Label({
+                    //     text: 'メッセージを全て入力してから\n送信してください',
+                    //     fill: 'crimson',
+                    //     fontSize: conf.FONT_SIZE,
+                    //     backgroundColor: 'white',
+                    //     x: conf.MSG_FRAME_SIZE * conf.MSG_NUM / 4,
+                    // }).addChildTo(parent).tweener.wait(500).fadeOut(500).play();
                 }
                 else {
                     // 送信ボタンと自分のフレームのクリック判定をオフ
-                    btn.setInteractive(false);
-                    btn.fill = conf.DISABLE_BUTTON_COLOR;
                     parent.children.forEach((frame) => {
                         frame.setInteractive(false);
                     });
@@ -216,15 +217,18 @@ export default (phina, conf, socket) => {
             };
         },
         setEnabled: function (bool) {
-            this.children.forEach((msgField) => {
-                msgField.children.forEach((grandChild) => {
-                    grandChild.setInteractive(bool); //　grandChild=frameやbtn
-                });
-            });
+            // this.children.forEach((msgField) => {
+            //     msgField.children.forEach((grandChild) => {
+            //         grandChild.setInteractive(bool); //　grandChild=frameやbtn
+            //     });
+            // });
+            console.log(bool);
+            this.btn.setInteractive(bool);
+            this.btn.fill = bool ? conf.ENABLE_BUTTON_COLOR : conf.DISABLE_BUTTON_COLOR;
         },
     });
 
-    phina.define('Round', {
+    phina.define('RoundLabel', {
         superClass: 'Label',
         init: function () {
             this.superInit({
@@ -239,7 +243,59 @@ export default (phina, conf, socket) => {
         },
     });
 
-    phina.define('Score', {
+    phina.define('NotificationLabel', {
+        superClass: 'LabelArea',
+        init: function () {
+            this.superInit({
+                text: '',
+                align: 'left',
+                fill: conf.FONT_COLOR,
+                fontSize: conf.FONT_SIZE,
+                // backgroundColor: 'whitesmoke',
+                backgroundColor: 'aliceblue',
+                width: 800,
+                height: 100,
+                padding: 10,
+            });
+        },
+        update: function () {
+            this.text = dynamicParam.notification;
+        },
+        // temp: function (tempNotification) {
+        //     this.text = tempNotification;
+        //     wait(500);
+        //     this.text = dynamicParam.notification;
+        // }
+    })
+
+    phina.define('PhaseLabel', {
+        superClass: 'Label',
+        init: function () {
+            this.superInit({
+                text: '',
+                align: 'center',
+                fill: conf.FONT_COLOR,
+                fontSize: conf.FONT_SIZE,
+            });
+        },
+        update: function () {
+            this.text = dynamicParam.phase;
+        },
+    });
+
+    phina.define('RoomLabel', {
+        superClass: 'Label',
+        init: function (pairId) {
+            this.superInit({
+                text: 'ROOM: ' + pairId,
+                align: 'left',
+                fill: conf.FONT_COLOR,
+                fontSize: conf.FONT_SIZE,
+            });
+        }
+    });
+
+    phina.define('ScoreLabel', {
         superClass: 'Label',
         init: function () {
             this.superInit({
@@ -254,7 +310,7 @@ export default (phina, conf, socket) => {
         },
     });
 
-    phina.define('Timer', {
+    phina.define('TimerLabel', {
         superClass: 'Label',
         init: function () {
             this.superInit({
@@ -331,9 +387,10 @@ export default (phina, conf, socket) => {
             this.destSendButton();
         },
         drawVisibleObj: function (visiblePosDic) {
+            console.log(visiblePosDic);
             const bg = (visiblePos) => { return this.cellGrop[visiblePos] };
             const rewardPos = visiblePosDic.reward;
-            const selfPos = visiblePosDic.self;
+            const selfPos = this.dest = visiblePosDic.self;
             const partnerPos = visiblePosDic.partner;
             if (rewardPos != null) this.rewardAvater.addChildTo(this).setPosition(bg(rewardPos).x, bg(rewardPos).y);
             if (partnerPos != null) this.partnerAvater.addChildTo(this).setPosition(bg(partnerPos).x, bg(partnerPos).y);
@@ -365,7 +422,7 @@ export default (phina, conf, socket) => {
                 const cellButton = this.cellGrop[movablePos];
                 cellButton.cell.fill = 'linen';
                 cellButton.cell.onpointstart = () => {
-                    this.dest = cellButton.cellNum;
+                    // this.dest = cellButton.cellNum;
                     visiblePosDic.self = cellButton.cellNum;
                     this.drawVisibleObj(visiblePosDic);
                     // console.log('clicked(' + cellButton.cellNum + ')');
@@ -433,7 +490,7 @@ export default (phina, conf, socket) => {
     phina.define('PlayerShadow', {
         superClass: 'CircleShape',
         init: function (isSelf) {
-            const playerColor = isSelf ? 'skyblue' : 'orange';
+            const playerColor = isSelf ? conf.SELF_COLOR : conf.PARTNER_COLOR;
             this.superInit({
                 radius: conf.CELL_SIZE / 2 * 0.5,
                 fill: 'transparent',
@@ -446,7 +503,7 @@ export default (phina, conf, socket) => {
     phina.define('Player', {
         superClass: 'CircleShape',
         init: function (isSelf) {
-            const playerColor = isSelf ? 'skyblue' : 'orange';
+            const playerColor = isSelf ? conf.SELF_COLOR : conf.PARTNER_COLOR;
             this.superInit({
                 radius: conf.CELL_SIZE / 2 * 0.5,
                 fill: playerColor,

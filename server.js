@@ -141,25 +141,25 @@ async function judge(reward, host, guest, round, pairId) {
         switch (judgmentName) {
             case 'continuation':
                 result.id = 'c';
-                result.incremental = conf.payoff.continuation;
+                result.increment = conf.payoff.continuation;
                 result.isGet = false;
                 result.nextPhase = 'messaging';
                 break;
             case 'sharing':
                 result.id = 's';
-                result.incremental = conf.payoff.sharing;
+                result.increment = conf.payoff.sharing;
                 result.isGet = true;
                 result.nextPhase = 'placement';
                 break;
             case 'monopoly':
                 result.id = 'm';
-                result.incremental = conf.payoff.monopoly;
+                result.increment = conf.payoff.monopoly;
                 result.isGet = true;
                 result.nextPhase = 'placement';
                 break;
             case 'failure':
                 result.id = 'f';
-                result.incremental = conf.payoff.failure;
+                result.increment = conf.payoff.failure;
                 result.isGet = false;
                 result.nextPhase = 'placement';
                 break;
