@@ -1,0 +1,10 @@
+# exp192
+## システム概要
+* サーバー
+  * node.js
+    * socket.io
+* クライアント
+  * JavaScript
+    * phina.js
+* データベース
+  * MySQL

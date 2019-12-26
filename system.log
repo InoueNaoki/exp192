@@ -1,0 +1,340 @@
+[2019-11-19T10:47:19.702] [INFO] system - [nodejs]port:3000
+[2019-11-19T10:47:19.705] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T10:47:20.320] [INFO] system - [socket.io]A2uBKk-yyRaqmN68AAAA connected successfully
+[2019-11-19T10:47:20.347] [INFO] system - [socket.io]4aKKV-r3Jzm3Rx_AAAAB connected successfully
+[2019-11-19T10:47:21.314] [INFO] system - [socket.io]3PJnFiPxU7aFHAPHAAAC connected successfully
+[2019-11-19T10:47:21.315] [INFO] system - [socket.io]6BWPaZx1NDfngQxtAAAD connected successfully
+[2019-11-19T10:47:21.316] [INFO] system - [socket.io]9I7Ee4-csHSa8KnTAAAE connected successfully
+[2019-11-19T10:47:21.324] [INFO] system - [socket.io]iIAJBM-uwwGpXQvqAAAF connected successfully
+[2019-11-19T10:47:21.339] [INFO] system - [socket.io]jnrJyDTW5afjs3QQAAAG connected successfully
+[2019-11-19T10:47:40.960] [INFO] system - [socket.io]9I7Ee4-csHSa8KnTAAAE disconnected
+[2019-11-19T10:47:41.117] [INFO] system - [socket.io]Yx3W3lx5hJp_9E8UAAAH connected successfully
+[2019-11-19T10:47:44.395] [INFO] system - [socket.io]6BWPaZx1NDfngQxtAAAD disconnected
+[2019-11-19T10:47:44.491] [INFO] system - [socket.io]7WsDA6GTHJK3IlfcAAAI connected successfully
+[2019-11-19T10:47:45.797] [INFO] system - [socket.io]7WsDA6GTHJK3IlfcAAAI joined lobby
+[2019-11-19T10:47:45.797] [TRACE] system - [mysql]INSERT INTO players SET user_id = "7WsDA6GTHJK3IlfcAAAI", socket_id = "7WsDA6GTHJK3IlfcAAAI";
+[2019-11-19T10:47:45.851] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":131,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T10:47:45.851] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T10:47:45.855] [TRACE] system - [mysql][{"MIN(id)":null}]
+[2019-11-19T10:47:45.855] [TRACE] system - [mysql]INSERT INTO pairs SET host_id = "7WsDA6GTHJK3IlfcAAAI";
+[2019-11-19T10:47:45.857] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":66,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T10:47:45.858] [TRACE] system - [mysql]UPDATE players SET is_host = true WHERE socket_id = "7WsDA6GTHJK3IlfcAAAI";
+[2019-11-19T10:47:45.860] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T10:47:48.882] [INFO] system - [socket.io]Yx3W3lx5hJp_9E8UAAAH joined lobby
+[2019-11-19T10:47:48.883] [TRACE] system - [mysql]INSERT INTO players SET user_id = "Yx3W3lx5hJp_9E8UAAAH", socket_id = "Yx3W3lx5hJp_9E8UAAAH";
+[2019-11-19T10:47:48.888] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":132,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T10:47:48.889] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T10:47:48.892] [TRACE] system - [mysql][{"MIN(id)":66}]
+[2019-11-19T10:47:48.892] [TRACE] system - [mysql]UPDATE pairs SET guest_id = "Yx3W3lx5hJp_9E8UAAAH" WHERE id = "66";
+[2019-11-19T10:47:48.894] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T10:47:48.895] [TRACE] system - [mysql]UPDATE players SET is_host = false WHERE socket_id = "Yx3W3lx5hJp_9E8UAAAH";
+[2019-11-19T10:47:48.897] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T10:59:47.410] [INFO] system - [socket.io]7WsDA6GTHJK3IlfcAAAI disconnected
+[2019-11-19T10:59:47.411] [INFO] system - [socket.io]Yx3W3lx5hJp_9E8UAAAH disconnected
+[2019-11-19T10:59:47.411] [INFO] system - [socket.io]iIAJBM-uwwGpXQvqAAAF disconnected
+[2019-11-19T10:59:47.411] [INFO] system - [socket.io]jnrJyDTW5afjs3QQAAAG disconnected
+[2019-11-19T10:59:47.412] [INFO] system - [socket.io]3PJnFiPxU7aFHAPHAAAC disconnected
+[2019-11-19T10:59:47.414] [INFO] system - [socket.io]4aKKV-r3Jzm3Rx_AAAAB disconnected
+[2019-11-19T10:59:47.414] [INFO] system - [socket.io]A2uBKk-yyRaqmN68AAAA disconnected
+[2019-11-19T10:59:48.250] [INFO] system - [socket.io]Nv7-VS-PlAgSQIpGAAAJ connected successfully
+[2019-11-19T10:59:48.252] [INFO] system - [socket.io]SP8LB1lKEwwvd8iPAAAK connected successfully
+[2019-11-19T10:59:48.874] [INFO] system - [socket.io]4p8-0njC8GFbG8EhAAAL connected successfully
+[2019-11-19T10:59:49.323] [INFO] system - [socket.io]UAl-wzdPQHsaX8GNAAAM connected successfully
+[2019-11-19T10:59:49.326] [INFO] system - [socket.io]jAC0AJWaBbZ63ugDAAAN connected successfully
+[2019-11-19T10:59:49.329] [INFO] system - [socket.io]P7Niusu5R6oSqxblAAAO connected successfully
+[2019-11-19T10:59:49.330] [INFO] system - [socket.io]bBHZP94MUWvyLOfqAAAP connected successfully
+[2019-11-19T11:13:25.854] [INFO] system - [socket.io]Nv7-VS-PlAgSQIpGAAAJ disconnected
+[2019-11-19T11:13:25.854] [INFO] system - [socket.io]SP8LB1lKEwwvd8iPAAAK disconnected
+[2019-11-19T11:13:25.854] [INFO] system - [socket.io]4p8-0njC8GFbG8EhAAAL disconnected
+[2019-11-19T11:13:25.854] [INFO] system - [socket.io]UAl-wzdPQHsaX8GNAAAM disconnected
+[2019-11-19T11:13:25.854] [INFO] system - [socket.io]jAC0AJWaBbZ63ugDAAAN disconnected
+[2019-11-19T11:13:25.854] [INFO] system - [socket.io]P7Niusu5R6oSqxblAAAO disconnected
+[2019-11-19T11:13:25.855] [INFO] system - [socket.io]bBHZP94MUWvyLOfqAAAP disconnected
+[2019-11-19T11:13:27.177] [INFO] system - [socket.io]WzT9Xl6LP9WnfWsxAAAQ connected successfully
+[2019-11-19T11:13:27.180] [INFO] system - [socket.io]vhwXxCWBbj0yLSEsAAAR connected successfully
+[2019-11-19T11:13:27.181] [INFO] system - [socket.io]1TfJ9gv9VcaTEEHuAAAS connected successfully
+[2019-11-19T11:13:27.183] [INFO] system - [socket.io]H9jBj4DaXG8s7ZXwAAAT connected successfully
+[2019-11-19T11:13:27.184] [INFO] system - [socket.io]TzJzApjOdcfmDY_hAAAU connected successfully
+[2019-11-19T11:13:27.185] [INFO] system - [socket.io]PXwQru1Czk1fnqhFAAAV connected successfully
+[2019-11-19T11:13:28.206] [INFO] system - [socket.io]4AO6kcYxMowZwcR-AAAW connected successfully
+[2019-11-19T11:23:27.070] [INFO] system - [socket.io]WzT9Xl6LP9WnfWsxAAAQ disconnected
+[2019-11-19T11:24:38.301] [INFO] system - [socket.io]1TfJ9gv9VcaTEEHuAAAS disconnected
+[2019-11-19T11:24:40.121] [INFO] system - [socket.io]vhwXxCWBbj0yLSEsAAAR disconnected
+[2019-11-19T11:24:42.124] [INFO] system - [socket.io]PXwQru1Czk1fnqhFAAAV disconnected
+[2019-11-19T11:24:44.854] [INFO] system - [socket.io]H9jBj4DaXG8s7ZXwAAAT disconnected
+[2019-11-19T12:45:24.799] [INFO] system - [socket.io]TzJzApjOdcfmDY_hAAAU disconnected
+[2019-11-19T12:45:24.799] [INFO] system - [socket.io]4AO6kcYxMowZwcR-AAAW disconnected
+[2019-11-19T12:45:26.508] [INFO] system - [socket.io]T3tPQy92QVoLqiiCAAAX connected successfully
+[2019-11-19T12:45:26.522] [INFO] system - [socket.io]4PmFYDhJr-tiisl1AAAY connected successfully
+[2019-11-19T12:51:50.516] [INFO] system - [socket.io]4PmFYDhJr-tiisl1AAAY disconnected
+[2019-11-19T12:51:50.517] [INFO] system - [socket.io]T3tPQy92QVoLqiiCAAAX disconnected
+[2019-11-19T12:51:51.952] [INFO] system - [socket.io]C8GyMpgrWmBiysKhAAAZ connected successfully
+[2019-11-19T12:51:52.921] [INFO] system - [socket.io]qY7al1hkoettE9CxAAAa connected successfully
+[2019-11-19T13:40:57.308] [INFO] system - [nodejs]port:3000
+[2019-11-19T13:40:57.312] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T13:40:57.992] [INFO] system - [socket.io]LaH7KPwcHRWlL-SwAAAA connected successfully
+[2019-11-19T13:40:57.993] [INFO] system - [socket.io]PwUGscihcu9tXQ80AAAB connected successfully
+[2019-11-19T16:39:40.550] [INFO] system - [nodejs]port:3000
+[2019-11-19T16:39:40.553] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T16:39:58.981] [INFO] system - [socket.io]74s_u6lZgwboLmPmAAAA connected successfully
+[2019-11-19T16:40:01.875] [INFO] system - [socket.io]e8gQnAos4LzWYl1cAAAB connected successfully
+[2019-11-19T16:40:02.967] [INFO] system - [socket.io]e8gQnAos4LzWYl1cAAAB joined lobby
+[2019-11-19T16:40:02.967] [TRACE] system - [mysql]INSERT INTO players SET user_id = "e8gQnAos4LzWYl1cAAAB", socket_id = "e8gQnAos4LzWYl1cAAAB";
+[2019-11-19T16:40:03.072] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":133,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T16:40:03.073] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T16:40:03.079] [TRACE] system - [mysql][{"MIN(id)":null}]
+[2019-11-19T16:40:03.079] [TRACE] system - [mysql]INSERT INTO pairs SET host_id = "e8gQnAos4LzWYl1cAAAB";
+[2019-11-19T16:40:03.082] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":67,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T16:40:03.082] [TRACE] system - [mysql]UPDATE players SET is_host = true WHERE socket_id = "e8gQnAos4LzWYl1cAAAB";
+[2019-11-19T16:40:03.085] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T16:40:05.284] [INFO] system - [socket.io]74s_u6lZgwboLmPmAAAA joined lobby
+[2019-11-19T16:40:05.284] [TRACE] system - [mysql]INSERT INTO players SET user_id = "74s_u6lZgwboLmPmAAAA", socket_id = "74s_u6lZgwboLmPmAAAA";
+[2019-11-19T16:40:05.289] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":134,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T16:40:05.289] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T16:40:05.292] [TRACE] system - [mysql][{"MIN(id)":67}]
+[2019-11-19T16:40:05.292] [TRACE] system - [mysql]UPDATE pairs SET guest_id = "74s_u6lZgwboLmPmAAAA" WHERE id = "67";
+[2019-11-19T16:40:05.294] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T16:40:05.294] [TRACE] system - [mysql]UPDATE players SET is_host = false WHERE socket_id = "74s_u6lZgwboLmPmAAAA";
+[2019-11-19T16:40:05.299] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T16:40:46.398] [INFO] system - [nodejs]port:3000
+[2019-11-19T16:40:46.401] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T16:40:47.037] [INFO] system - [socket.io]QwAYTSYv49j5SIOrAAAA connected successfully
+[2019-11-19T16:40:47.334] [INFO] system - [socket.io]FBKJiDYcY2V6gjFgAAAB connected successfully
+[2019-11-19T16:40:49.003] [INFO] system - [socket.io]FBKJiDYcY2V6gjFgAAAB disconnected
+[2019-11-19T16:40:49.161] [INFO] system - [socket.io]9kudZSWw_utZbiloAAAC connected successfully
+[2019-11-19T16:40:52.343] [INFO] system - [socket.io]QwAYTSYv49j5SIOrAAAA disconnected
+[2019-11-19T16:40:52.543] [INFO] system - [socket.io]Z82DXY7uhXzlckeAAAAD connected successfully
+[2019-11-19T16:40:53.693] [INFO] system - [socket.io]Z82DXY7uhXzlckeAAAAD joined lobby
+[2019-11-19T16:40:53.693] [TRACE] system - [mysql]INSERT INTO players SET user_id = "Z82DXY7uhXzlckeAAAAD", socket_id = "Z82DXY7uhXzlckeAAAAD";
+[2019-11-19T16:40:53.752] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":135,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T16:40:53.754] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T16:40:53.761] [TRACE] system - [mysql][{"MIN(id)":null}]
+[2019-11-19T16:40:53.762] [TRACE] system - [mysql]INSERT INTO pairs SET host_id = "Z82DXY7uhXzlckeAAAAD";
+[2019-11-19T16:40:53.764] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":68,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T16:40:53.765] [TRACE] system - [mysql]UPDATE players SET is_host = true WHERE socket_id = "Z82DXY7uhXzlckeAAAAD";
+[2019-11-19T16:40:53.767] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T16:40:55.210] [INFO] system - [socket.io]9kudZSWw_utZbiloAAAC joined lobby
+[2019-11-19T16:40:55.210] [TRACE] system - [mysql]INSERT INTO players SET user_id = "9kudZSWw_utZbiloAAAC", socket_id = "9kudZSWw_utZbiloAAAC";
+[2019-11-19T16:40:55.215] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":136,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T16:40:55.215] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T16:40:55.218] [TRACE] system - [mysql][{"MIN(id)":68}]
+[2019-11-19T16:40:55.219] [TRACE] system - [mysql]UPDATE pairs SET guest_id = "9kudZSWw_utZbiloAAAC" WHERE id = "68";
+[2019-11-19T16:40:55.222] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T16:40:55.222] [TRACE] system - [mysql]UPDATE players SET is_host = false WHERE socket_id = "9kudZSWw_utZbiloAAAC";
+[2019-11-19T16:40:55.225] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T16:41:09.124] [INFO] system - [nodejs]port:3000
+[2019-11-19T16:41:09.127] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T16:41:10.024] [INFO] system - [socket.io]KvO620NnEnz9VSHJAAAA connected successfully
+[2019-11-19T16:41:10.427] [INFO] system - [socket.io]xd6kmSYNWUlJsQyfAAAB connected successfully
+[2019-11-19T16:41:12.226] [INFO] system - [socket.io]KvO620NnEnz9VSHJAAAA disconnected
+[2019-11-19T16:41:12.323] [INFO] system - [socket.io]-z3Ao1mr0RTAC4qZAAAC connected successfully
+[2019-11-19T16:41:16.096] [INFO] system - [socket.io]xd6kmSYNWUlJsQyfAAAB disconnected
+[2019-11-19T16:41:16.213] [INFO] system - [socket.io]rcTN1ZHu4w544aPAAAAD connected successfully
+[2019-11-19T16:41:17.658] [INFO] system - [socket.io]rcTN1ZHu4w544aPAAAAD joined lobby
+[2019-11-19T16:41:17.658] [TRACE] system - [mysql]INSERT INTO players SET user_id = "rcTN1ZHu4w544aPAAAAD", socket_id = "rcTN1ZHu4w544aPAAAAD";
+[2019-11-19T16:41:17.715] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":137,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T16:41:17.716] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T16:41:17.722] [TRACE] system - [mysql][{"MIN(id)":null}]
+[2019-11-19T16:41:17.723] [TRACE] system - [mysql]INSERT INTO pairs SET host_id = "rcTN1ZHu4w544aPAAAAD";
+[2019-11-19T16:41:17.727] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":69,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T16:41:17.727] [TRACE] system - [mysql]UPDATE players SET is_host = true WHERE socket_id = "rcTN1ZHu4w544aPAAAAD";
+[2019-11-19T16:41:17.730] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T16:41:19.342] [INFO] system - [socket.io]-z3Ao1mr0RTAC4qZAAAC joined lobby
+[2019-11-19T16:41:19.342] [TRACE] system - [mysql]INSERT INTO players SET user_id = "-z3Ao1mr0RTAC4qZAAAC", socket_id = "-z3Ao1mr0RTAC4qZAAAC";
+[2019-11-19T16:41:19.347] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":138,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T16:41:19.348] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T16:41:19.351] [TRACE] system - [mysql][{"MIN(id)":69}]
+[2019-11-19T16:41:19.351] [TRACE] system - [mysql]UPDATE pairs SET guest_id = "-z3Ao1mr0RTAC4qZAAAC" WHERE id = "69";
+[2019-11-19T16:41:19.356] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T16:41:19.357] [TRACE] system - [mysql]UPDATE players SET is_host = false WHERE socket_id = "-z3Ao1mr0RTAC4qZAAAC";
+[2019-11-19T16:41:19.360] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T16:42:49.767] [INFO] system - [nodejs]port:3000
+[2019-11-19T16:42:49.771] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T16:42:49.817] [INFO] system - [socket.io]2suiaJCuv4owFzUJAAAA connected successfully
+[2019-11-19T16:42:50.581] [INFO] system - [socket.io]ew-2_8F0rOAUD7kOAAAB connected successfully
+[2019-11-19T16:44:34.880] [INFO] system - [nodejs]port:3000
+[2019-11-19T16:44:34.886] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T16:44:35.996] [INFO] system - [socket.io]M7NLfOMMncnkFOPnAAAA connected successfully
+[2019-11-19T16:44:36.518] [INFO] system - [socket.io]ERCq7U5NNiFHug5JAAAB connected successfully
+[2019-11-19T17:30:55.092] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:30:55.096] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:30:55.677] [INFO] system - [socket.io]9k4KPdHgOMruaFvXAAAA connected successfully
+[2019-11-19T17:30:57.618] [INFO] system - [socket.io]0_YzQLofi9O8knoPAAAB connected successfully
+[2019-11-19T17:32:59.747] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:32:59.750] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:33:00.615] [INFO] system - [socket.io]Js4QXLSLqIi22hG5AAAA connected successfully
+[2019-11-19T17:33:00.656] [INFO] system - [socket.io]HluAJrgB0lCy_q-lAAAB connected successfully
+[2019-11-19T17:33:42.220] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:33:42.224] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:33:43.109] [INFO] system - [socket.io]G8JW7DXsIm2hc-rdAAAA connected successfully
+[2019-11-19T17:33:43.571] [INFO] system - [socket.io]QXaEcP-tIWs-kKonAAAB connected successfully
+[2019-11-19T17:34:26.839] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:34:26.842] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:34:27.616] [INFO] system - [socket.io]uWFp_0QPNeuvgRPbAAAA connected successfully
+[2019-11-19T17:34:28.560] [INFO] system - [socket.io]FgmLBft4oySDJI2rAAAB connected successfully
+[2019-11-19T17:34:31.758] [INFO] system - [socket.io]uWFp_0QPNeuvgRPbAAAA disconnected
+[2019-11-19T17:34:31.883] [INFO] system - [socket.io]vYqnl-X4PbriCgDVAAAC connected successfully
+[2019-11-19T17:34:37.445] [INFO] system - [socket.io]Ud5wj9nxkWnRzV-1AAAD connected successfully
+[2019-11-19T17:34:52.856] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:34:52.861] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:34:53.409] [INFO] system - [socket.io]FYDSYZV0ogWEMZJuAAAA connected successfully
+[2019-11-19T17:34:53.594] [INFO] system - [socket.io]P47Rbb0WgYnR9s4aAAAB connected successfully
+[2019-11-19T17:34:53.604] [INFO] system - [socket.io]hMJvXiEay9RW64ypAAAC connected successfully
+[2019-11-19T17:34:54.521] [INFO] system - [socket.io]FYDSYZV0ogWEMZJuAAAA disconnected
+[2019-11-19T17:34:54.718] [INFO] system - [socket.io]u9u_fmhKKW5lBffbAAAD connected successfully
+[2019-11-19T17:34:59.488] [INFO] system - [socket.io]P47Rbb0WgYnR9s4aAAAB disconnected
+[2019-11-19T17:34:59.674] [INFO] system - [socket.io]PCMI058UkcGdLd4VAAAE connected successfully
+[2019-11-19T17:48:30.151] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:48:30.158] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:48:30.610] [INFO] system - [socket.io]UzUT-hZ0XSILFYFqAAAA connected successfully
+[2019-11-19T17:48:30.612] [INFO] system - [socket.io]urgxlAd629i3M71rAAAB connected successfully
+[2019-11-19T17:48:30.829] [INFO] system - [socket.io]M9ajI5Y2_nkU7qp6AAAC connected successfully
+[2019-11-19T17:48:48.885] [INFO] system - [socket.io]M9ajI5Y2_nkU7qp6AAAC disconnected
+[2019-11-19T17:48:49.026] [INFO] system - [socket.io]8f0eVYMVoMukB5MpAAAD connected successfully
+[2019-11-19T17:48:50.931] [INFO] system - [socket.io]UzUT-hZ0XSILFYFqAAAA disconnected
+[2019-11-19T17:48:51.063] [INFO] system - [socket.io]jCVChUzxQwMjFsyVAAAE connected successfully
+[2019-11-19T17:48:52.026] [INFO] system - [socket.io]jCVChUzxQwMjFsyVAAAE joined lobby
+[2019-11-19T17:48:52.027] [TRACE] system - [mysql]INSERT INTO players SET user_id = "jCVChUzxQwMjFsyVAAAE", socket_id = "jCVChUzxQwMjFsyVAAAE";
+[2019-11-19T17:48:52.115] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":139,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:48:52.116] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T17:48:52.120] [TRACE] system - [mysql][{"MIN(id)":null}]
+[2019-11-19T17:48:52.120] [TRACE] system - [mysql]INSERT INTO pairs SET host_id = "jCVChUzxQwMjFsyVAAAE";
+[2019-11-19T17:48:52.124] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":70,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:48:52.125] [TRACE] system - [mysql]UPDATE players SET is_host = true WHERE socket_id = "jCVChUzxQwMjFsyVAAAE";
+[2019-11-19T17:48:52.127] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:48:53.789] [INFO] system - [socket.io]8f0eVYMVoMukB5MpAAAD joined lobby
+[2019-11-19T17:48:53.790] [TRACE] system - [mysql]INSERT INTO players SET user_id = "8f0eVYMVoMukB5MpAAAD", socket_id = "8f0eVYMVoMukB5MpAAAD";
+[2019-11-19T17:48:53.793] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":140,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:48:53.793] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T17:48:53.797] [TRACE] system - [mysql][{"MIN(id)":70}]
+[2019-11-19T17:48:53.797] [TRACE] system - [mysql]UPDATE pairs SET guest_id = "8f0eVYMVoMukB5MpAAAD" WHERE id = "70";
+[2019-11-19T17:48:53.801] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:48:53.801] [TRACE] system - [mysql]UPDATE players SET is_host = false WHERE socket_id = "8f0eVYMVoMukB5MpAAAD";
+[2019-11-19T17:48:53.803] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:48:58.608] [DEBUG] system - 8f0eVYMVoMukB5MpAAADsend msg to 70: square
+[2019-11-19T17:49:01.558] [DEBUG] system - jCVChUzxQwMjFsyVAAAEsend msg to 70: triangle
+[2019-11-19T17:49:10.216] [INFO] system - [socket.io]8f0eVYMVoMukB5MpAAAD disconnected
+[2019-11-19T17:49:34.873] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:49:34.878] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:49:35.120] [INFO] system - [socket.io]khsp_8QttCNhv-xWAAAA connected successfully
+[2019-11-19T17:49:35.494] [INFO] system - [socket.io]5nyc-LfI1FPAMSOEAAAB connected successfully
+[2019-11-19T17:49:36.404] [INFO] system - [socket.io]khsp_8QttCNhv-xWAAAA disconnected
+[2019-11-19T17:49:36.519] [INFO] system - [socket.io]3PZPY4zObeOfEBS3AAAC connected successfully
+[2019-11-19T17:49:39.352] [INFO] system - [socket.io]ksLlaB2jLs4ED5MyAAAD connected successfully
+[2019-11-19T17:49:40.357] [INFO] system - [socket.io]ksLlaB2jLs4ED5MyAAAD joined lobby
+[2019-11-19T17:49:40.358] [TRACE] system - [mysql]INSERT INTO players SET user_id = "ksLlaB2jLs4ED5MyAAAD", socket_id = "ksLlaB2jLs4ED5MyAAAD";
+[2019-11-19T17:49:40.436] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":141,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:49:40.436] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T17:49:40.440] [TRACE] system - [mysql][{"MIN(id)":null}]
+[2019-11-19T17:49:40.440] [TRACE] system - [mysql]INSERT INTO pairs SET host_id = "ksLlaB2jLs4ED5MyAAAD";
+[2019-11-19T17:49:40.442] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":71,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:49:40.443] [TRACE] system - [mysql]UPDATE players SET is_host = true WHERE socket_id = "ksLlaB2jLs4ED5MyAAAD";
+[2019-11-19T17:49:40.446] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:49:44.625] [INFO] system - [socket.io]3PZPY4zObeOfEBS3AAAC joined lobby
+[2019-11-19T17:49:44.625] [TRACE] system - [mysql]INSERT INTO players SET user_id = "3PZPY4zObeOfEBS3AAAC", socket_id = "3PZPY4zObeOfEBS3AAAC";
+[2019-11-19T17:49:44.628] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":142,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:49:44.628] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T17:49:44.631] [TRACE] system - [mysql][{"MIN(id)":71}]
+[2019-11-19T17:49:44.631] [TRACE] system - [mysql]UPDATE pairs SET guest_id = "3PZPY4zObeOfEBS3AAAC" WHERE id = "71";
+[2019-11-19T17:49:44.635] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:49:44.635] [TRACE] system - [mysql]UPDATE players SET is_host = false WHERE socket_id = "3PZPY4zObeOfEBS3AAAC";
+[2019-11-19T17:49:44.637] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:51:55.938] [INFO] system - [socket.io]3PZPY4zObeOfEBS3AAAC disconnected
+[2019-11-19T17:51:56.136] [INFO] system - [socket.io]b2m1IfHoUKb0kxlXAAAE connected successfully
+[2019-11-19T17:51:59.626] [INFO] system - [socket.io]ksLlaB2jLs4ED5MyAAAD disconnected
+[2019-11-19T17:51:59.750] [INFO] system - [socket.io]_jUBO2E1q9q4ZGIhAAAF connected successfully
+[2019-11-19T17:52:01.786] [INFO] system - [socket.io]_jUBO2E1q9q4ZGIhAAAF joined lobby
+[2019-11-19T17:52:01.786] [TRACE] system - [mysql]INSERT INTO players SET user_id = "_jUBO2E1q9q4ZGIhAAAF", socket_id = "_jUBO2E1q9q4ZGIhAAAF";
+[2019-11-19T17:52:01.792] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":143,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:52:01.793] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T17:52:01.796] [TRACE] system - [mysql][{"MIN(id)":null}]
+[2019-11-19T17:52:01.796] [TRACE] system - [mysql]INSERT INTO pairs SET host_id = "_jUBO2E1q9q4ZGIhAAAF";
+[2019-11-19T17:52:01.799] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":72,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:52:01.799] [TRACE] system - [mysql]UPDATE players SET is_host = true WHERE socket_id = "_jUBO2E1q9q4ZGIhAAAF";
+[2019-11-19T17:52:01.802] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:52:06.504] [INFO] system - [socket.io]_jUBO2E1q9q4ZGIhAAAF disconnected
+[2019-11-19T17:52:06.756] [INFO] system - [socket.io]U6pfvHhVF57TTxFiAAAG connected successfully
+[2019-11-19T17:52:10.292] [INFO] system - [socket.io]b2m1IfHoUKb0kxlXAAAE disconnected
+[2019-11-19T17:52:10.599] [INFO] system - [socket.io]wCrsRHA6rVcYi284AAAH connected successfully
+[2019-11-19T17:52:14.774] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:52:14.777] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:52:15.383] [INFO] system - [socket.io]M0qELpeY2nUxUic6AAAA connected successfully
+[2019-11-19T17:52:16.302] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:52:16.306] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:52:16.642] [INFO] system - [socket.io]8fpkfQQEZp6CLjLZAAAA connected successfully
+[2019-11-19T17:52:17.292] [INFO] system - [socket.io]2De59xupQXHK3culAAAB connected successfully
+[2019-11-19T17:52:19.605] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:52:19.610] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:52:21.948] [INFO] system - [socket.io]j8beTwmS-NVCuTHxAAAA connected successfully
+[2019-11-19T17:52:23.591] [INFO] system - [socket.io]PJAIX6pugFsoZEaeAAAB connected successfully
+[2019-11-19T17:52:23.592] [INFO] system - [socket.io]2Ddf0wI7cdw6z9DeAAAC connected successfully
+[2019-11-19T17:52:27.291] [INFO] system - [socket.io]j8beTwmS-NVCuTHxAAAA disconnected
+[2019-11-19T17:52:27.696] [INFO] system - [socket.io]v2HCGCwXe0Lyyz4JAAAD connected successfully
+[2019-11-19T17:52:30.348] [INFO] system - [socket.io]PJAIX6pugFsoZEaeAAAB disconnected
+[2019-11-19T17:52:30.461] [INFO] system - [socket.io]EwBupDEbQyyU6CKNAAAE connected successfully
+[2019-11-19T17:52:34.177] [INFO] system - [socket.io]EwBupDEbQyyU6CKNAAAE joined lobby
+[2019-11-19T17:52:34.177] [TRACE] system - [mysql]INSERT INTO players SET user_id = "EwBupDEbQyyU6CKNAAAE", socket_id = "EwBupDEbQyyU6CKNAAAE";
+[2019-11-19T17:52:34.261] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":144,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:52:34.262] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T17:52:34.266] [TRACE] system - [mysql][{"MIN(id)":72}]
+[2019-11-19T17:52:34.266] [TRACE] system - [mysql]UPDATE pairs SET guest_id = "EwBupDEbQyyU6CKNAAAE" WHERE id = "72";
+[2019-11-19T17:52:34.270] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:52:34.270] [TRACE] system - [mysql]UPDATE players SET is_host = false WHERE socket_id = "EwBupDEbQyyU6CKNAAAE";
+[2019-11-19T17:52:34.273] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:52:40.341] [INFO] system - [socket.io]v2HCGCwXe0Lyyz4JAAAD joined lobby
+[2019-11-19T17:52:40.341] [TRACE] system - [mysql]INSERT INTO players SET user_id = "v2HCGCwXe0Lyyz4JAAAD", socket_id = "v2HCGCwXe0Lyyz4JAAAD";
+[2019-11-19T17:52:40.345] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":145,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:52:40.346] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T17:52:40.348] [TRACE] system - [mysql][{"MIN(id)":null}]
+[2019-11-19T17:52:40.349] [TRACE] system - [mysql]INSERT INTO pairs SET host_id = "v2HCGCwXe0Lyyz4JAAAD";
+[2019-11-19T17:52:40.351] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":73,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:52:40.351] [TRACE] system - [mysql]UPDATE players SET is_host = true WHERE socket_id = "v2HCGCwXe0Lyyz4JAAAD";
+[2019-11-19T17:52:40.355] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:52:54.943] [INFO] system - [socket.io]EwBupDEbQyyU6CKNAAAE disconnected
+[2019-11-19T17:52:55.067] [INFO] system - [socket.io]1a1ap0CP8-OnUjqtAAAF connected successfully
+[2019-11-19T17:52:56.291] [INFO] system - [socket.io]1a1ap0CP8-OnUjqtAAAF joined lobby
+[2019-11-19T17:52:56.291] [TRACE] system - [mysql]INSERT INTO players SET user_id = "1a1ap0CP8-OnUjqtAAAF", socket_id = "1a1ap0CP8-OnUjqtAAAF";
+[2019-11-19T17:52:56.295] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":146,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
+[2019-11-19T17:52:56.297] [TRACE] system - [mysql]SELECT MIN(id) FROM pairs WHERE guest_id IS NULL;
+[2019-11-19T17:52:56.307] [TRACE] system - [mysql][{"MIN(id)":73}]
+[2019-11-19T17:52:56.307] [TRACE] system - [mysql]UPDATE pairs SET guest_id = "1a1ap0CP8-OnUjqtAAAF" WHERE id = "73";
+[2019-11-19T17:52:56.310] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:52:56.311] [TRACE] system - [mysql]UPDATE players SET is_host = false WHERE socket_id = "1a1ap0CP8-OnUjqtAAAF";
+[2019-11-19T17:52:56.313] [TRACE] system - [mysql]{"fieldCount":0,"affectedRows":1,"insertId":0,"serverStatus":2,"warningCount":0,"message":"(Rows matched: 1  Changed: 1  Warnings: 0","protocol41":true,"changedRows":1}
+[2019-11-19T17:54:57.043] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:54:57.048] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:54:57.686] [INFO] system - [socket.io]3dCdpYvgeam2KblFAAAA connected successfully
+[2019-11-19T17:54:58.567] [INFO] system - [socket.io]WukwNF3Balb-2AXWAAAB connected successfully
+[2019-11-19T17:54:58.572] [INFO] system - [socket.io]eFW17iektpp7r7MoAAAC connected successfully
+[2019-11-19T17:57:20.937] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:57:20.940] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:57:22.163] [INFO] system - [socket.io]vLy4aMIegn6DnDJ1AAAA connected successfully
+[2019-11-19T17:57:22.633] [INFO] system - [socket.io]_cFdqhU0jkbHR-JpAAAB connected successfully
+[2019-11-19T17:57:22.638] [INFO] system - [socket.io]6fEzJ-5yKwihRPGTAAAC connected successfully
+[2019-11-19T17:57:53.229] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:57:53.231] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:57:54.235] [INFO] system - [socket.io]h3WB8P3_WvvS0vImAAAA connected successfully
+[2019-11-19T17:57:54.579] [INFO] system - [socket.io]-TcFuxzMzwvlfQTcAAAB connected successfully
+[2019-11-19T17:57:54.592] [INFO] system - [socket.io]Dtl-no7GtInR_cfqAAAC connected successfully
+[2019-11-19T17:58:16.634] [INFO] system - [socket.io]h3WB8P3_WvvS0vImAAAA disconnected
+[2019-11-19T17:58:16.836] [INFO] system - [socket.io]qPK9758MSj0YCg-bAAAD connected successfully
+[2019-11-19T17:58:19.218] [INFO] system - [socket.io]Dtl-no7GtInR_cfqAAAC disconnected
+[2019-11-19T17:58:19.317] [INFO] system - [socket.io]sjMW5PjZ5XgXSJG0AAAE connected successfully
+[2019-11-19T17:58:21.757] [INFO] system - [socket.io]sjMW5PjZ5XgXSJG0AAAE disconnected
+[2019-11-19T17:58:21.880] [INFO] system - [socket.io]ZxbG0-myVfmlKMtTAAAF connected successfully
+[2019-11-19T17:58:27.678] [INFO] system - [socket.io]qPK9758MSj0YCg-bAAAD disconnected
+[2019-11-19T17:58:27.922] [INFO] system - [socket.io]k1rQciz0rfTLp5n2AAAG connected successfully
+[2019-11-19T17:58:34.848] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:58:34.851] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:58:35.610] [INFO] system - [socket.io]gy4ANf5jBwL4gGlrAAAA connected successfully
+[2019-11-19T17:58:36.484] [INFO] system - [socket.io]Qbf_boe9GFNCuur5AAAB connected successfully
+[2019-11-19T17:58:37.046] [INFO] system - [socket.io]Qbf_boe9GFNCuur5AAAB disconnected
+[2019-11-19T17:58:37.277] [INFO] system - [socket.io]UBfvr-qFQs3COQpDAAAC connected successfully
+[2019-11-19T17:58:38.675] [INFO] system - [socket.io]awPowl4jVDZIc78nAAAD connected successfully
+[2019-11-19T17:58:39.029] [INFO] system - [socket.io]gy4ANf5jBwL4gGlrAAAA disconnected
+[2019-11-19T17:58:39.149] [INFO] system - [socket.io]xzK-6vDJcntg5gxUAAAE connected successfully
+[2019-11-19T17:58:59.955] [INFO] system - [nodejs]port:3000
+[2019-11-19T17:58:59.959] [INFO] system - [nodejs]ip:127.0.0.1
+[2019-11-19T17:59:00.893] [INFO] system - [socket.io]eGx1AvOy8YKazFBtAAAA connected successfully
+[2019-11-19T17:59:01.590] [INFO] system - [socket.io]V_BoceaSsxwDcDTDAAAB connected successfully
+[2019-11-19T17:59:01.591] [INFO] system - [socket.io]jJb1VXjKY1vdo-64AAAC connected successfully
