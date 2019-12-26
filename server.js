@@ -263,12 +263,12 @@ function createInitialPosDic() {
         host: shuffledSeq[1],
         guest: shuffledSeq[2],
     };
-    return {
-        reward: 0,
-        host: 1,
-        guest: 1
-    };
-    // return initialPre;
+    // return {
+    //     reward: 0,
+    //     host: 1,
+    //     guest: 1
+    // };
+    return initialPre;
 }
 
 function shuffle(arr) {

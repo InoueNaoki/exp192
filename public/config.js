@@ -21,6 +21,7 @@ export default {
     "WALL_WIDTH": 10,
     "WALL_COLOR": "black",
     "notification": {
+        'initial': '初期準備中...',
         'placing': '準備中...',
         'waitPartner': '送信しました\n相手の選択を待っています',
         'pleaseExchange': '図形を選択し，送信してください',

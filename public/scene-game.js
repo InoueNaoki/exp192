@@ -7,7 +7,7 @@ export default (phina, conf, socket) => {
         score: 0,
         time: 0,
         phase: 'placement',
-        notification: '初期準備中...',
+        notification: conf.notification.initial,
     };
     const historyList = [];
     phina.define('GameScene', {
@@ -40,8 +40,11 @@ export default (phina, conf, socket) => {
             socket.on('response judgment', (judgmentResult) => {
                 dynamicParam.score += judgmentResult.increment;
                 dynamicParam.round++;
+
                 this.nextPhase(judgmentResult.nextPhase);
-                this.msgGroup.setEnabled(true);
+                if (judgmentResult.nextPhase === 'placement' && staticParam.isHost) socket.emit('request placement', dynamicParam.round);
+                // this.msgGroup.setEnabled(true);
+                this.msgGroup.reset();
             });
         },
         nextPhase: function (next = 'error') {
@@ -49,16 +52,18 @@ export default (phina, conf, socket) => {
                 case 'placement':
                     // this.msgGroup.setEnabled(true);
                     dynamicParam.phase = 'messaging';
-                    dynamicParam.notification = '図形を選択し，送信してください';
+                    dynamicParam.notification = conf.notification.pleaseExchange;
                     break;
                 case 'messaging':
                     this.msgGroup.setEnabled(false);
                     this.board.setEnabled(true);
                     dynamicParam.phase = 'moving';
+                    dynamicParam.notification = conf.notification.pleaseMove;
                     break;
                 case 'moving':
                     this.board.setEnabled(false);
                     dynamicParam.phase = 'judgment';
+                    dynamicParam.notification = conf.notification.judging;
                     break;
                 case 'judgment':
                     dynamicParam.phase = next;
@@ -75,11 +80,11 @@ export default (phina, conf, socket) => {
         init: function (shapeList) { 
             this.superInit();
             this.currentShapeIndexList = [...Array(conf.MSG_NUM)];
-            const selfMsgGroup = DisplayElement().addChildTo(this);
-            this.msgField(true, conf.MSG_NUM, shapeList, selfMsgGroup);
-            const partnerMsgGroup = DisplayElement().addChildTo(this);
-            partnerMsgGroup.y = 400;
-            this.msgField(false, conf.MSG_NUM, shapeList, partnerMsgGroup);
+            this.selfMsgGroup = DisplayElement().addChildTo(this);
+            this.msgField(true, conf.MSG_NUM, shapeList, this.selfMsgGroup);
+            this.partnerMsgGroup = DisplayElement().addChildTo(this);
+            this.partnerMsgGroup.y = 400;
+            this.msgField(false, conf.MSG_NUM, shapeList, this.partnerMsgGroup);
         },
         msgField: function (isSelfMsg, msgNum, shapeList, parent) {
             [...Array(msgNum)].forEach((_, i) => {
@@ -112,7 +117,6 @@ export default (phina, conf, socket) => {
             if (isSelfMsg) {
                 frame.onpush = () => {
                     if (!this.currentShapeIndexList[i]) this.currentShapeIndexList[i] = 0;
-                    frame.text = '';
                     if (this.currentShapeIndexList[i] === shapeList.length - 1) this.currentShapeIndexList[i] = 0;
                     else this.currentShapeIndexList[i]++;
                     this.drawShape(shapeList[this.currentShapeIndexList[i]], frame);
@@ -120,12 +124,12 @@ export default (phina, conf, socket) => {
             }
             else {
                 socket.on('response messaging', (recieveShapeList) => {
-                    frame.text = '';
                     this.drawShape(recieveShapeList[i], frame);
                 });
             }
         },
-        drawShape: function (shape,parent) {
+        drawShape: function (shape, parent) {
+            parent.text = '';
             parent.children.clear(); //既にある画像を削除
             switch (shape.name) {
                 case 'circle':
@@ -203,11 +207,12 @@ export default (phina, conf, socket) => {
                 }
                 else {
                     // 送信ボタンと自分のフレームのクリック判定をオフ
-                    parent.children.forEach((frame) => {
-                        frame.setInteractive(false);
-                        this.btn.setInteractive(false);
-                        this.btn.fill = conf.DISABLE_BUTTON_COLOR;
-                    });
+                    // parent.children.forEach((frame) => {
+                        // frame.setInteractive(false);
+                        // this.btn.setInteractive(false);
+                        // this.btn.fill = conf.DISABLE_BUTTON_COLOR;
+                    // });
+                    this.setEnabled(false);
                     //　メッセージをサーバーに送信
                     const sendShapeList = this.currentShapeIndexList.map((currentShapeIndex) => {
                         return shapeList[currentShapeIndex];
@@ -217,6 +222,14 @@ export default (phina, conf, socket) => {
             };
         },
         reset: function () {
+            this.selfMsgGroup.children[0].children.clear();
+            this.selfMsgGroup.children[0].text = 'click';
+            this.selfMsgGroup.children[1].children.clear();
+            this.selfMsgGroup.children[1].text = 'click';
+            this.partnerMsgGroup.children[0].children.clear();
+            this.partnerMsgGroup.children[0].text = 'waiting';
+            this.partnerMsgGroup.children[1].children.clear();
+            this.partnerMsgGroup.children[1].text = 'waiting';
             this.setEnabled(true);
         },
         setEnabled: function (bool) {
