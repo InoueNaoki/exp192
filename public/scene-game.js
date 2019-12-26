@@ -38,8 +38,6 @@ export default (phina, conf, socket) => {
             socket.on('finish messaging', () => this.nextPhase());
             socket.on('finish moving', () => this.nextPhase());
             socket.on('response judgment', (judgmentResult) => {
-                console.log(judgmentResult);
-                console.log(dynamicParam);
                 dynamicParam.score += judgmentResult.increment;
                 dynamicParam.round++;
                 this.nextPhase(judgmentResult.nextPhase);
@@ -207,6 +205,8 @@ export default (phina, conf, socket) => {
                     // 送信ボタンと自分のフレームのクリック判定をオフ
                     parent.children.forEach((frame) => {
                         frame.setInteractive(false);
+                        this.btn.setInteractive(false);
+                        this.btn.fill = conf.DISABLE_BUTTON_COLOR;
                     });
                     //　メッセージをサーバーに送信
                     const sendShapeList = this.currentShapeIndexList.map((currentShapeIndex) => {
@@ -216,13 +216,15 @@ export default (phina, conf, socket) => {
                 }
             };
         },
+        reset: function () {
+            this.setEnabled(true);
+        },
         setEnabled: function (bool) {
-            // this.children.forEach((msgField) => {
-            //     msgField.children.forEach((grandChild) => {
-            //         grandChild.setInteractive(bool); //　grandChild=frameやbtn
-            //     });
-            // });
-            console.log(bool);
+            this.children.forEach((msgField) => {
+                msgField.children.forEach((grandChild) => {
+                    grandChild.setInteractive(bool); // grandChild=frameやbtn
+                });
+            });
             this.btn.setInteractive(bool);
             this.btn.fill = bool ? conf.ENABLE_BUTTON_COLOR : conf.DISABLE_BUTTON_COLOR;
         },
