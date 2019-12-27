@@ -14,7 +14,6 @@ export default (phina, conf, socket) => {
         superClass: 'DisplayScene',
         init: function (staticParam) {
             if (staticParam.isHost) socket.emit('request placement', dynamicParam.round);
-            console.log(staticParam);
             const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
@@ -34,16 +33,27 @@ export default (phina, conf, socket) => {
                 this.board.drawVisibleObj(visiblePosDic);
                 this.board.drawMovableCell(movablePosList, visiblePosDic);
                 this.nextPhase(); //nextphase
+                this.msgGroup.reset();
+                this.board.reset();
+                dynamicParam.notification = conf.notification.pleaseExchange;
             });
-            socket.on('finish messaging', () => this.nextPhase());
-            socket.on('finish moving', () => this.nextPhase());
+            socket.on('finish messaging', () => {
+                this.msgGroup.setEnabled(false);
+                this.nextPhase();
+                dynamicParam.notification = conf.notification.pleaseMove;
+            });
+            socket.on('finish moving', () => {
+                this.board.setEnabled(false);
+                this.nextPhase();
+                dynamicParam.notification = conf.notification.judging;
+            });
             socket.on('response judgment', (judgmentResult) => {
                 dynamicParam.score += judgmentResult.increment;
                 dynamicParam.round++;
-
                 this.nextPhase(judgmentResult.nextPhase);
                 if (judgmentResult.nextPhase === 'placement' && staticParam.isHost) socket.emit('request placement', dynamicParam.round);
                 // this.msgGroup.setEnabled(true);
+                this.board.reset();
                 this.msgGroup.reset();
             });
         },
@@ -52,18 +62,13 @@ export default (phina, conf, socket) => {
                 case 'placement':
                     // this.msgGroup.setEnabled(true);
                     dynamicParam.phase = 'messaging';
-                    dynamicParam.notification = conf.notification.pleaseExchange;
                     break;
                 case 'messaging':
-                    this.msgGroup.setEnabled(false);
-                    this.board.setEnabled(true);
+                    // this.board.setEnabled(true);
                     dynamicParam.phase = 'moving';
-                    dynamicParam.notification = conf.notification.pleaseMove;
                     break;
                 case 'moving':
-                    this.board.setEnabled(false);
                     dynamicParam.phase = 'judgment';
-                    dynamicParam.notification = conf.notification.judging;
                     break;
                 case 'judgment':
                     dynamicParam.phase = next;
@@ -196,7 +201,7 @@ export default (phina, conf, socket) => {
                     }, 60, 'easeOutInElastic').by({
                         x: 20,
                     }, 30, 'easeOutInElastic');
-                    dynamicParam.notification = 'メッセージを全て入力してから送信してください';
+                    dynamicParam.notification = conf.notification.undecidedShape;
                     // Label({
                     //     text: 'メッセージを全て入力してから\n送信してください',
                     //     fill: 'crimson',
@@ -402,7 +407,6 @@ export default (phina, conf, socket) => {
             this.destSendButton();
         },
         drawVisibleObj: function (visiblePosDic) {
-            console.log(visiblePosDic);
             const bg = (visiblePos) => { return this.cellGrop[visiblePos] };
             const rewardPos = visiblePosDic.reward;
             const selfPos = this.dest = visiblePosDic.self;
@@ -453,18 +457,30 @@ export default (phina, conf, socket) => {
                 y: (conf.GRID_SIZE * conf.CELL_NUM_Y) - (conf.GRID_SIZE / 4),
             }).addChildTo(this);
             this.btn.onpush = () => {
-                this.btn.setInteractive(false);
-                this.btn.fill = conf.DISABLE_BUTTON_COLOR;
+                this.setEnabled(false);
+                dynamicParam.notification = conf.notification.waitPartner;
                 socket.emit('request moving', this.dest, dynamicParam);
             }
         },
+        reset: function () {
+            console.log('ボードリセット！');
+            // this.cellGrop.forEach((cell) => {
+            //     cell.children.clear();
+            // });
+
+            // this.board.drawVisibleObj(visiblePosDic);
+            // this.board.drawMovableCell(movablePosList, visiblePosDic);
+            this.setEnabled(true);
+        },
         setEnabled: function (bool) {
-            if (bool === true) {
-                this.btn.show();
-            }
-            else {
-                this.btn.hide();
-            }
+            // if (bool === true) {
+            //     this.btn.show();
+            // }
+            // else {
+            //     this.btn.hide();
+            // }
+            this.btn.setInteractive(bool);
+            this.btn.fill = bool ? conf.ENABLE_BUTTON_COLOR : conf.DISABLE_BUTTON_COLOR;
             this.children.forEach((cell) => {
                 cell.setInteractive(bool);
             });
