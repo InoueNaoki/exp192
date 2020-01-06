@@ -22,7 +22,7 @@ export default {
     "WALL_COLOR": "black",
     "notification": {
         'initial': '初期準備中...',
-        'placing': '準備中...',
+        'gettingReady': '準備中...',
         'waitPartner': '送信しました\n相手の選択を待っています',
         'pleaseExchange': '図形を選択し，送信してください',
         'undecidedShape': 'メッセージを全て入力してから送信してください',

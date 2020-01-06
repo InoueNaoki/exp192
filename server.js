@@ -72,12 +72,7 @@ io.on('connection', async (socket) => {
 
     /* placementフェーズ: Hostのみがrequest */
     await socket.on('request placement', async (round) => {
-        const pairId = await getPairId(socket.id);
-        const initialPre = createInitialPosDic(9);
-        await sql('INSERT INTO commons (pair_id, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, round, initialPre.reward, initialPre.host, initialPre.guest]]);
-        socket.emit('response placement', getVisibleDic(initialPre, true), getMovableList(initialPre.host));　//ホストの部屋割当情報をホストクライアントに送信
-        socket.to(pairId).emit('response placement', getVisibleDic(initialPre, false), getMovableList(initialPre.guest)); //ゲストの部屋割当情報をゲストクライアントに送信
-        // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPre));
+        await place(socket, round);
     });
 
     /* messagingフェーズ: お互いが任意の時間にrequest　*/
@@ -119,6 +114,7 @@ io.on('connection', async (socket) => {
             const partnerResult = await isHost ? judgment.guestResult : judgment.hostResult;
             await sql('UPDATE personals SET behavior = ?, behavior_at = ? WHERE current_round = ? AND player_id IN (SELECT partner_id FROM players WHERE id = ?)', [partnerResult.id, game.time, game.round, socket.id]);
             await socket.to(pairId).emit('response judgment', partnerResult); //パートナーに
+            // await place(socket, game.round);
         }
     });
 
@@ -134,6 +130,15 @@ http.listen(port, ip, () => {
     logger.info('[nodejs]port:' + port);
     logger.info('[nodejs]ip:' + ip);
 });
+
+async function place(socket,round) {
+    const pairId = await getPairId(socket.id);
+    const initialPre = createInitialPosDic(9);
+    await sql('INSERT INTO commons (pair_id, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, round, initialPre.reward, initialPre.host, initialPre.guest]]);
+    socket.emit('response placement', getVisibleDic(initialPre, true), getMovableList(initialPre.host));　//ホストの部屋割当情報をホストクライアントに送信
+    socket.to(pairId).emit('response placement', getVisibleDic(initialPre, false), getMovableList(initialPre.guest)); //ゲストの部屋割当情報をゲストクライアントに送信
+        // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPre));
+}
 
 async function judge(reward, host, guest, round, pairId) {
     const createResult = (judgmentName) => {

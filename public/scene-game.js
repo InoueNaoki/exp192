@@ -18,46 +18,52 @@ export default (phina, conf, socket) => {
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
             const gy = this.gridY;
-            RoomLabel(staticParam.pairId).addChildTo(this).setPosition(gx.span(0), gy.span(0.5));
-            TimerLabel().addChildTo(this).setPosition(gx.span(0), gy.span(1.5));
-            RoundLabel().addChildTo(this).setPosition(gx.span(0), gy.span(2.5));
-            ScoreLabel().addChildTo(this).setPosition(gx.span(0), gy.span(3.5));
+            RoomLabel(staticParam.pairId).addChildTo(this).setPosition(gx.span(0.5), gy.span(0.5));
+            TimerLabel().addChildTo(this).setPosition(gx.span(0.5), gy.span(1.5));
+            RoundLabel().addChildTo(this).setPosition(gx.span(0.5), gy.span(2.5));
+            ScoreLabel().addChildTo(this).setPosition(gx.span(0.5), gy.span(3.5));
             PhaseLabel().addChildTo(this).setPosition(gx.span(4), gy.span(0.5));
-            NotificationLabel().addChildTo(this).setPosition(gx.span(6), gy.span(2));
-            this.board = Board().addChildTo(this).setPosition(gx.span(2), gy.span(6));
-            this.board.setEnabled(false);
-            this.msgGroup = MsgGroup(shapeList).addChildTo(this).setPosition(gx.span(7), gy.span(6));
+            NotificationLabel().addChildTo(this).setPosition(gx.span(7), gy.span(2));
+            const board = Board().addChildTo(this).setPosition(gx.span(3), gy.span(6));
+            board.reset();
+            const msgGroup = MsgGroup(shapeList).addChildTo(this).setPosition(gx.span(8), gy.span(6));
             // this.exit(param); //gameover
             // this.initPhase();
             socket.on('response placement', (visiblePosDic, movablePosList) => {
-                this.board.drawVisibleObj(visiblePosDic);
-                this.board.drawMovableCell(movablePosList, visiblePosDic);
+                board.drawVisibleObj(visiblePosDic);
+                board.drawMovableCell(movablePosList, visiblePosDic);
                 this.nextPhase(); //nextphase
-                this.msgGroup.reset();
-                this.board.reset();
+                msgGroup.reset();
+                msgGroup.setEnabled(true);
+                console.log('ノーティフィケーション');
                 dynamicParam.notification = conf.notification.pleaseExchange;
             });
             socket.on('finish messaging', () => {
-                this.msgGroup.setEnabled(false);
+                msgGroup.setEnabled(false);
                 this.nextPhase();
                 dynamicParam.notification = conf.notification.pleaseMove;
+                board.setEnabled(true);
             });
             socket.on('finish moving', () => {
-                this.board.setEnabled(false);
+                board.setEnabled(false);
                 this.nextPhase();
                 dynamicParam.notification = conf.notification.judging;
             });
             socket.on('response judgment', (judgmentResult) => {
                 dynamicParam.score += judgmentResult.increment;
                 dynamicParam.round++;
-                this.nextPhase(judgmentResult.nextPhase);
-                if (judgmentResult.nextPhase === 'placement' && staticParam.isHost) socket.emit('request placement', dynamicParam.round);
+                this.nextPhase();
+                if (staticParam.isHost) socket.emit('request placement', dynamicParam.round);
+                dynamicParam.notification = conf.notification.gettingReady;
+                // this.nextPhase(judgmentResult.nextPhase);
+                // if (judgmentResult.nextPhase === 'placement' && staticParam.isHost) socket.emit('request placement', dynamicParam.round);
                 // this.msgGroup.setEnabled(true);
-                this.board.reset();
-                this.msgGroup.reset();
+                // this.board.reset();
+                // this.msgGroup.reset();
+                board.reset();
             });
         },
-        nextPhase: function (next = 'error') {
+        nextPhase: function () {
             switch (dynamicParam.phase) {
                 case 'placement':
                     // this.msgGroup.setEnabled(true);
@@ -71,7 +77,7 @@ export default (phina, conf, socket) => {
                     dynamicParam.phase = 'judgment';
                     break;
                 case 'judgment':
-                    dynamicParam.phase = next;
+                    dynamicParam.phase = 'placement';
                     break;
                 default:
                     console.error('invaild phase name');
@@ -193,22 +199,10 @@ export default (phina, conf, socket) => {
                 y: conf.MSG_FRAME_SIZE * 0.8,
             }).addChildTo(parent);
             this.btn.onpush = () => {
+                console.log(this.currentShapeIndexList);
                 if (this.currentShapeIndexList.includes(undefined)) {
-                    this.btn.tweener.clear().by({
-                        x: 20,
-                    }, 30, 'easeOutInElastic').by({
-                        x: -40,
-                    }, 60, 'easeOutInElastic').by({
-                        x: 20,
-                    }, 30, 'easeOutInElastic');
+                    this.btn.tweener.clear().by({ x: 20 }, 30, 'easeOutInElastic').by({ x: -40 }, 60, 'easeOutInElastic').by({ x: 20 }, 30, 'easeOutInElastic');
                     dynamicParam.notification = conf.notification.undecidedShape;
-                    // Label({
-                    //     text: 'メッセージを全て入力してから\n送信してください',
-                    //     fill: 'crimson',
-                    //     fontSize: conf.FONT_SIZE,
-                    //     backgroundColor: 'white',
-                    //     x: conf.MSG_FRAME_SIZE * conf.MSG_NUM / 4,
-                    // }).addChildTo(parent).tweener.wait(500).fadeOut(500).play();
                 }
                 else {
                     // 送信ボタンと自分のフレームのクリック判定をオフ
@@ -227,6 +221,7 @@ export default (phina, conf, socket) => {
             };
         },
         reset: function () {
+            this.currentShapeIndexList.fill(undefined);
             this.selfMsgGroup.children[0].children.clear();
             this.selfMsgGroup.children[0].text = 'click';
             this.selfMsgGroup.children[1].children.clear();
@@ -235,7 +230,6 @@ export default (phina, conf, socket) => {
             this.partnerMsgGroup.children[0].text = 'waiting';
             this.partnerMsgGroup.children[1].children.clear();
             this.partnerMsgGroup.children[1].text = 'waiting';
-            this.setEnabled(true);
         },
         setEnabled: function (bool) {
             this.children.forEach((msgField) => {
@@ -284,6 +278,7 @@ export default (phina, conf, socket) => {
         // temp: function (tempNotification) {
         //     this.text = tempNotification;
         //     wait(500);
+        //    .tweener.wait(500).fadeOut(500).play();
         //     this.text = dynamicParam.notification;
         // }
     })
@@ -397,7 +392,7 @@ export default (phina, conf, socket) => {
                     const convertFrom2dTo1d = (x, y) => { return conf.CELL_NUM_Y * y + x };// ex. in:(0,0),(0,1),(0,2)...(2,2)→out:0,1,2...9
                     const coord1d = convertFrom2dTo1d(spanX, spanY);
                     // this.boardGridList.push({ x: boardGridX.span(spanX), y: boardGridY.span(spanY) });
-                    this.cellGrop.push({ cell: cellButton, x: boardGridX.span(spanX), y: boardGridY.span(spanY), cellNum: coord1d });
+                    this.cellGrop.push({ cellButton: cellButton, x: boardGridX.span(spanX), y: boardGridY.span(spanY), cellNum: coord1d });
                 });
             });
             this.rewardAvater = Reward();
@@ -439,8 +434,8 @@ export default (phina, conf, socket) => {
         drawMovableCell: function (movablePosList, visiblePosDic) { 
             movablePosList.forEach((movablePos) => {
                 const cellButton = this.cellGrop[movablePos];
-                cellButton.cell.fill = 'linen';
-                cellButton.cell.onpointstart = () => {
+                cellButton.cellButton.fill = 'linen';
+                cellButton.cellButton.onpointstart = () => {
                     // this.dest = cellButton.cellNum;
                     visiblePosDic.self = cellButton.cellNum;
                     this.drawVisibleObj(visiblePosDic);
@@ -464,13 +459,21 @@ export default (phina, conf, socket) => {
         },
         reset: function () {
             console.log('ボードリセット！');
-            // this.cellGrop.forEach((cell) => {
-            //     cell.children.clear();
-            // });
-
+            // if (this.cellGrop != undefined) {
+                // console.log(this.cellGrop.children);
+            //     this.cellGrop.children.clear();
+            // }
+            // this.cellGrop.children.clear();
+            this.setEnabled(false);
+            this.cellGrop.forEach((cell) => {
+                cell.cellButton.fill = 'white';
+            });
+            this.selfAvater.remove();
+            this.partnerAvater.remove();
+            this.rewardAvater.remove();
             // this.board.drawVisibleObj(visiblePosDic);
             // this.board.drawMovableCell(movablePosList, visiblePosDic);
-            this.setEnabled(true);
+            // this.setEnabled(true);
         },
         setEnabled: function (bool) {
             // if (bool === true) {
