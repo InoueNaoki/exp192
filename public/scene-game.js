@@ -35,7 +35,6 @@ export default (phina, conf, socket) => {
                 this.nextPhase(); //nextphase
                 msgGroup.reset();
                 msgGroup.setEnabled(true);
-                console.log('ノーティフィケーション');
                 dynamicParam.notification = conf.notification.pleaseExchange;
             });
             socket.on('finish messaging', () => {
@@ -458,7 +457,6 @@ export default (phina, conf, socket) => {
             }
         },
         reset: function () {
-            console.log('ボードリセット！');
             // if (this.cellGrop != undefined) {
                 // console.log(this.cellGrop.children);
             //     this.cellGrop.children.clear();
@@ -467,6 +465,7 @@ export default (phina, conf, socket) => {
             this.setEnabled(false);
             this.cellGrop.forEach((cell) => {
                 cell.cellButton.fill = 'white';
+                delete cell.cellButton.onpointstart;
             });
             this.selfAvater.remove();
             this.partnerAvater.remove();
