@@ -6,6 +6,7 @@ export default (phina, conf, socket) => {
         round: 1,
         score: 0,
         time: 0,
+        gameMode: 1,
         phase: 'placement',
         notification: conf.notification.initial,
     };
@@ -13,16 +14,18 @@ export default (phina, conf, socket) => {
     phina.define('GameScene', {
         superClass: 'DisplayScene',
         init: function (staticParam) {
-            if (staticParam.isHost) socket.emit('request placement', dynamicParam.round);
+            if (staticParam.isHost) socket.emit('request init', dynamicParam.gameMode, dynamicParam.round);
             const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
             const gy = this.gridY;
-            RoomLabel(staticParam.pairId).addChildTo(this).setPosition(gx.span(0.5), gy.span(0.5));
-            TimerLabel().addChildTo(this).setPosition(gx.span(0.5), gy.span(1.5));
-            RoundLabel().addChildTo(this).setPosition(gx.span(0.5), gy.span(2.5));
-            ScoreLabel().addChildTo(this).setPosition(gx.span(0.5), gy.span(3.5));
-            PhaseLabel().addChildTo(this).setPosition(gx.span(4), gy.span(0.5));
+            console.log(staticParam);
+            // RoomLabel(staticParam.pairId).addChildTo(this).setPosition(gx.span(0.5), gy.span(0.5));
+            // IdLabel(staticParam.isHost ? staticParam.hostId : staticParam.guestId).addChildTo(this).setPosition(gx.span(0.5), gy.span(1));
+            TimerLabel().addChildTo(this).setPosition(gx.span(0.5), gy.span(0.5));
+            RoundLabel().addChildTo(this).setPosition(gx.span(0.5), gy.span(1.5));
+            ScoreLabel().addChildTo(this).setPosition(gx.span(0.5), gy.span(2.5));
+            // PhaseLabel().addChildTo(this).setPosition(gx.span(4), gy.span(0.5));
             NotificationLabel().addChildTo(this).setPosition(gx.span(7), gy.span(2));
             const board = Board().addChildTo(this).setPosition(gx.span(3), gy.span(6));
             board.reset();
@@ -52,14 +55,18 @@ export default (phina, conf, socket) => {
                 dynamicParam.score += judgmentResult.increment;
                 dynamicParam.round++;
                 this.nextPhase();
-                if (staticParam.isHost) socket.emit('request placement', dynamicParam.round);
+                if (staticParam.isHost) socket.emit('request init', dynamicParam.gameMode, dynamicParam.round);
                 dynamicParam.notification = conf.notification.gettingReady;
                 // this.nextPhase(judgmentResult.nextPhase);
-                // if (judgmentResult.nextPhase === 'placement' && staticParam.isHost) socket.emit('request placement', dynamicParam.round);
+                // if (judgmentResult.nextPhase === 'placement' && staticParam.isHost) socket.emit('request init', dynamicParam.round);
                 // this.msgGroup.setEnabled(true);
                 // this.board.reset();
                 // this.msgGroup.reset();
                 board.reset();
+            });
+            socket.on('disconnect', async () => {
+                const selfId = staticParam.isHost ? staticParam.hostId : staticParam.guestId;
+                console.log('Bye ' + selfId);
             });
         },
         nextPhase: function () {
@@ -198,7 +205,6 @@ export default (phina, conf, socket) => {
                 y: conf.MSG_FRAME_SIZE * 0.8,
             }).addChildTo(parent);
             this.btn.onpush = () => {
-                console.log(this.currentShapeIndexList);
                 if (this.currentShapeIndexList.includes(undefined)) {
                     this.btn.tweener.clear().by({ x: 20 }, 30, 'easeOutInElastic').by({ x: -40 }, 60, 'easeOutInElastic').by({ x: 20 }, 30, 'easeOutInElastic');
                     dynamicParam.notification = conf.notification.undecidedShape;
@@ -297,6 +303,18 @@ export default (phina, conf, socket) => {
         },
     });
 
+    phina.define('IdLabel', {
+        superClass: 'Label',
+        init: function (id) {
+            this.superInit({
+                text: 'ID: ' + id,
+                align: 'left',
+                fill: conf.FONT_COLOR,
+                fontSize: conf.FONT_SIZE,
+            });
+        }
+    });
+    
     phina.define('RoomLabel', {
         superClass: 'Label',
         init: function (pairId) {

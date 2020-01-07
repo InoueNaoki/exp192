@@ -14,6 +14,7 @@ export default {
     "FONT_COLOR": "black",
     "SHAPE_COLOR": "black",
     "FONT_SIZE": 48,
+    "FONT_SIZE_S": 24,
     "CELL_NUM_X": 3,
     "CELL_NUM_Y": 3,
     "GRID_SIZE": 200,
@@ -36,26 +37,8 @@ export default {
         { "id": 0, "name": "circle" },
         { "id": 1, "name": "triangle" },
         { "id": 2, "name": "square" },
-        { "id": 3, "name": "hexagon" },
+        { "id": 3, "name": "hexagon" }
         // { "id": 4, "name": "diamond" },
         // { "id": 5, "name": "octagon" },
     ],
-    // "OPTION": {
-    //     "height": this.SCREEN_HEIGHT,
-    //     "width": this.SCREEN_WIDTH,
-    // }
 };
-// const SCREEN_WIDTH = 1920; // 画面横サイズ
-// const SCREEN_HEIGHT = 1080; // 画面縦サイズ
-// const MSG_FRAME_SIZE = 150;
-// const BACKGROUND_COLOR = 'white';
-// const FONT_COLOR = 'black';
-// const SHAPE_COLOR = 'black';
-// const FONT_SIZE = 48;
-// const CELL_NUM_X = 3; // 小部屋（マス目）のX軸方向の数
-// const CELL_NUM_Y = 3; // 小部屋（マス目）のY軸方向の数
-// const GRID_SIZE = 200; // グリッドのサイズ
-// const CELL_SIZE = conf.GRID_SIZE; // パネルの大きさ
-// const WALL_WIDTH = 10;
-// const CELL_COLOR = BACKGROUND_COLOR;
-// const WALL_COLOR = 'black';
