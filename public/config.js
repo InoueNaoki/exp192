@@ -5,6 +5,7 @@ export default {
         "height": 1080,
         "backgroundColor": "white"
     },
+    "FINISH_TIME": 60000,
     "MSG_NUM": 2,
     "MSG_FRAME_SIZE": 150,
     "ENABLE_BUTTON_COLOR": "skyblue",
@@ -33,6 +34,7 @@ export default {
     },
     "MATCHMAKING_MSG": "マッチング中......\nブラウザを閉じないでください",
     "COMPLETE_MATCHMAKE_MSG": "マッチング成立！\nしばらくこのままお待ち下さい",
+    "BREAKING_MSG": "ゲーム1が終了しました\nゲーム２を始めてください",
     "SHAPE_LIST": [
         { "id": 0, "name": "circle" },
         { "id": 1, "name": "triangle" },

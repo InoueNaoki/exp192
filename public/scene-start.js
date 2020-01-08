@@ -18,7 +18,7 @@ export default (phina,conf)=> {
                 .addChildTo(this)
                 .setPosition(this.gridX.center(), this.gridY.center(1))
                 .onpointstart = () => {
-                    this.exit('matchmaking');//to MatchmakingScene
+                    this.exit();//to MatchmakingScene
                 };
         },
     });

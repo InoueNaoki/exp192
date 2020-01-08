@@ -53,7 +53,8 @@ export default (phina, conf, socket) => {
                 dynamicParam.notification = conf.notification.judging;
             });
             socket.on('response judgment', (judgmentResult) => {
-                // dynamicParam.score += judgmentResult.increment;
+                console.log(judgmentResult);
+                dynamicParam.score += judgmentResult.increment;
                 this.nextPhase();
                 dynamicParam.notification = conf.notification.gettingReady;
                 // this.nextPhase(judgmentResult.nextPhase);
@@ -67,6 +68,12 @@ export default (phina, conf, socket) => {
                 const selfId = staticParam.isHost ? staticParam.hostId : staticParam.guestId;
                 console.log('Bye ' + selfId);
             });
+        },
+        update: function (staticParam) { 
+            if (dynamicParam.time >= 10000) {
+                console.log('time10000');
+                this.exit(staticParam);
+            }
         },
         nextPhase: function () {
             switch (dynamicParam.phase) {
@@ -357,9 +364,9 @@ export default (phina, conf, socket) => {
         },
         update: function (app) {
             dynamicParam.time += app.deltaTime;
-            const time = dynamicParam.time / 1000;
-            const min = ('00' + Math.floor(time / 60)).slice(-2);
-            const sec = ('00' + Math.floor(time % 60)).slice(-2);
+            const secTime = dynamicParam.time / 1000;
+            const min = ('00' + Math.floor(secTime / 60)).slice(-2);
+            const sec = ('00' + Math.floor(secTime % 60)).slice(-2);
             this.text = 'TIME: ' + min + ':' + sec; // 経過秒数表示
         },
     });

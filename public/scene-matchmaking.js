@@ -1,7 +1,7 @@
 export default (phina, conf, socket)=> {
     phina.define('MatchmakingScene', {
         superClass: 'DisplayScene',
-        init: function (param) {
+        init: function (staticParam) {
             // 親クラス初期化
             this.superInit(conf.SCREEN);
             const label = Label({
@@ -19,12 +19,12 @@ export default (phina, conf, socket)=> {
                 label.text = conf.COMPLETE_MATCHMAKE_MSG;
                 label.fill = 'seagreen';
                 loading.remove();
-                param.pairId = pairId;
-                param.isHost = isHost;
-                param.hostId = hostId;
-                param.guestId = guestId;
+                staticParam.pairId = pairId;
+                staticParam.isHost = isHost;
+                staticParam.hostId = hostId;
+                staticParam.guestId = guestId;
                 await wait(1);
-                this.exit(param);// to placementScene
+                this.exit(staticParam);
             });
         },
     });
