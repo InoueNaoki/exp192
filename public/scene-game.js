@@ -29,10 +29,11 @@ export default (phina, conf, socket) => {
             NotificationLabel().addChildTo(this).setPosition(gx.span(7), gy.span(2));
             const board = Board().addChildTo(this).setPosition(gx.span(3), gy.span(6));
             board.reset();
-            const msgGroup = MsgGroup(shapeList).addChildTo(this).setPosition(gx.span(8), gy.span(6));
+            const msgGroup = MsgGroup(shapeList).addChildTo(this).setPosition(gx.span(8), gy.span(7));
             // this.exit(param); //gameover
             // this.initPhase();
-            socket.on('response placement', (visiblePosDic, movablePosList) => {
+            socket.on('response placement', (visiblePosDic, movablePosList, round) => {
+                dynamicParam.round = round;
                 board.drawVisibleObj(visiblePosDic);
                 board.drawMovableCell(movablePosList, visiblePosDic);
                 this.nextPhase(); //nextphase
@@ -52,10 +53,8 @@ export default (phina, conf, socket) => {
                 dynamicParam.notification = conf.notification.judging;
             });
             socket.on('response judgment', (judgmentResult) => {
-                dynamicParam.score += judgmentResult.increment;
-                dynamicParam.round++;
+                // dynamicParam.score += judgmentResult.increment;
                 this.nextPhase();
-                if (staticParam.isHost) socket.emit('request init', dynamicParam.gameMode, dynamicParam.round);
                 dynamicParam.notification = conf.notification.gettingReady;
                 // this.nextPhase(judgmentResult.nextPhase);
                 // if (judgmentResult.nextPhase === 'placement' && staticParam.isHost) socket.emit('request init', dynamicParam.round);
@@ -97,10 +96,13 @@ export default (phina, conf, socket) => {
         init: function (shapeList) { 
             this.superInit();
             this.currentShapeIndexList = [...Array(conf.MSG_NUM)];
+            
             this.selfMsgGroup = DisplayElement().addChildTo(this);
+            this.selfMsgGroup.y = 350;
             this.msgField(true, conf.MSG_NUM, shapeList, this.selfMsgGroup);
+
             this.partnerMsgGroup = DisplayElement().addChildTo(this);
-            this.partnerMsgGroup.y = 400;
+            // this.partnerMsgGroup.y = 400;
             this.msgField(false, conf.MSG_NUM, shapeList, this.partnerMsgGroup);
         },
         msgField: function (isSelfMsg, msgNum, shapeList, parent) {

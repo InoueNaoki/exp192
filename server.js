@@ -105,16 +105,23 @@ io.on('connection', async (socket) => {
             socket.to(pairId).emit('finish moving'); //これだけだと自分にemitされない
             socket.emit('finish moving'); // 自分にemitされなかったので
             const selectPost = (await sql('SELECT reward,host_post,guest_post FROM commons WHERE current_round = ? AND pair_id = ?', [dynamicParam.round, pairId]))[0];
-            const judgment = await judge(selectPost.reward, selectPost.host_post, selectPost.guest_post, dynamicParam.round, pairId);
-            console.log(judgment);
-            const playerResult = await isHost ? judgment.hostResult : judgment.guestResult;
+            const results = await judge(selectPost.reward, selectPost.host_post, selectPost.guest_post, dynamicParam.round, pairId);
+            logger.info('[game]' + JSON.stringify(results));
+            const playerResult = await isHost ? results.hostResult : results.guestResult;
             await sql('UPDATE personals SET behavior = ?, behavior_at = ? WHERE current_round = ? AND player_id = ?', [playerResult.id, dynamicParam.time, dynamicParam.round, socket.id]);
             await socket.emit('response judgment', playerResult); // 自分に
 
-            const partnerResult = await isHost ? judgment.guestResult : judgment.hostResult;
+            const partnerResult = await isHost ? results.guestResult : results.hostResult;
             await sql('UPDATE personals SET behavior = ?, behavior_at = ? WHERE current_round = ? AND player_id IN (SELECT partner_id FROM players WHERE id = ?)', [partnerResult.id, dynamicParam.time, dynamicParam.round, socket.id]);
             await socket.to(pairId).emit('response judgment', partnerResult); //パートナーに
-            // await place(socket, game.round);
+
+            if (playerResult.isGet || partnerResult.isGet) {
+                //誰か報酬取得
+                await place(socket, dynamicParam.gameMode, dynamicParam.round + 1);
+            } else {
+                //誰も報酬取得していない
+                await through(socket, dynamicParam.gameMode, dynamicParam.round + 1, { reward: selectPost.reward, host: selectPost.host_post, guest: selectPost.guest_post });
+            }
         }
     });
 
@@ -135,10 +142,22 @@ async function place(socket, gameMode, round) {
     const pairId = await getPairId(socket.id);
     const initialPre = createInitialPosDic(9);
     await sql('INSERT INTO commons (pair_id, game_mode, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, gameMode, round, initialPre.reward, initialPre.host, initialPre.guest]]);
-    socket.emit('response placement', getVisibleDic(initialPre, true), getMovableList(initialPre.host));　//ホストの部屋割当情報をホストクライアントに送信
-    socket.to(pairId).emit('response placement', getVisibleDic(initialPre, false), getMovableList(initialPre.guest)); //ゲストの部屋割当情報をゲストクライアントに送信
+    socket.emit('response placement', getVisibleDic(initialPre, true), getMovableList(initialPre.host),round);　//ホストの部屋割当情報をホストクライアントに送信
+    socket.to(pairId).emit('response placement', getVisibleDic(initialPre, false), getMovableList(initialPre.guest),round); //ゲストの部屋割当情報をゲストクライアントに送信
         // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPre));
 }
+
+async function through(socket, gameMode, round, continuationPre) {
+    const pairId = await getPairId(socket.id);
+    // const initialPre = createInitialPosDic(9);
+    console.log("selectPost");
+    await sql('INSERT INTO commons (pair_id, game_mode, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, gameMode, round, continuationPre.reward, continuationPre.host, continuationPre.guest]]);
+    socket.emit('response placement', getVisibleDic(continuationPre, true), getMovableList(continuationPre.host), round);　//ホストの部屋割当情報をホストクライアントに送信
+    socket.to(pairId).emit('response placement', getVisibleDic(continuationPre, false), getMovableList(continuationPre.guest), round); //ゲストの部屋割当情報をゲストクライアントに送信
+    // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPre));
+}
+
+// async function getPreRound(){};
 
 async function judge(reward, host, guest, round, pairId) {
     const createResult = (judgmentName) => {
