@@ -10,6 +10,16 @@ export default (phina, conf, socket) => {
             })
                 .addChildTo(this)
                 .setPosition(this.gridX.center(), this.gridY.center());
+            Button({
+                text: 'START',
+                fontSize: conf.FONT_SIZE,
+                fill: conf.ENABLE_BUTTON_COLOR
+            })
+                .addChildTo(this)
+                .setPosition(this.gridX.center(), this.gridY.center(2))
+                .onpointstart = () => {
+                    this.exit();//to GameScene
+                };
             // this.exit(param);// to placementScene
         },
     });

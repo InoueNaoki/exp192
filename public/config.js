@@ -34,7 +34,7 @@ export default {
     },
     "MATCHMAKING_MSG": "マッチング中......\nブラウザを閉じないでください",
     "COMPLETE_MATCHMAKE_MSG": "マッチング成立！\nしばらくこのままお待ち下さい",
-    "BREAKING_MSG": "ゲーム1が終了しました\nゲーム２を始めてください",
+    "BREAKING_MSG": "お疲れさまでした．\n下のボタンを押してゲーム２を始めてください",
     "SHAPE_LIST": [
         { "id": 0, "name": "circle" },
         { "id": 1, "name": "triangle" },

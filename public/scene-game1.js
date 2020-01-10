@@ -11,7 +11,7 @@ export default (phina, conf, socket) => {
         notification: conf.notification.initial,
     };
     const historyList = [];
-    phina.define('GameScene', {
+    phina.define('Game1Scene', {
         superClass: 'DisplayScene',
         init: function (staticParam) {
             if (staticParam.isHost) socket.emit('request init', dynamicParam.gameMode, dynamicParam.round);
