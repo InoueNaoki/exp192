@@ -1,7 +1,7 @@
 export default (phina, conf, socket)=> {
     phina.define('MatchmakingScene', {
         superClass: 'DisplayScene',
-        init: function (staticParam) {
+        init: function (param) {
             // 親クラス初期化
             this.superInit(conf.SCREEN);
             const label = Label({
@@ -14,17 +14,20 @@ export default (phina, conf, socket)=> {
             const loading = Loading(8)
                 .addChildTo(this)
                 .setPosition(this.gridX.center(), this.gridY.center(+1));
-            socket.emit('join lobby');
-            socket.on('finish matchmaking', async (pairId,isHost,hostId,guestId) => {
+            socket.emit('request matchmaking');
+            socket.on('response matchmaking', async (pairId,isHost,hostId,guestId) => {
                 label.text = conf.COMPLETE_MATCHMAKE_MSG;
                 label.fill = 'seagreen';
                 loading.remove();
-                staticParam.pairId = pairId;
-                staticParam.isHost = isHost;
-                staticParam.hostId = hostId;
-                staticParam.guestId = guestId;
+                param.match = {
+                    pairId: pairId,
+                    isHost: isHost,
+                    hostId: hostId,
+                    guestId: guestId
+                };
+                param.mode = 1;
                 await wait(1);
-                this.exit(staticParam);
+                this.exit(param);
             });
         },
     });

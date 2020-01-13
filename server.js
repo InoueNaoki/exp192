@@ -30,7 +30,7 @@ io.on('connection', async (socket) => {
     // logger.info('[socket.io]' + socket.id + ' connected successfully');
     
     /* マッチメイキング　*/
-    await socket.on('join lobby', async () => {
+    await socket.on('request matchmaking', async () => {
         socket.join(conf.LOBBY_NAME); // 待機ロビーに入室
         // logger.info('[socket.io]' + socket.id + ' joined lobby');
         await sql('INSERT INTO players SET id = ?', [socket.id]);
@@ -54,26 +54,26 @@ io.on('connection', async (socket) => {
             // logger.info('[game] pair' + pairId + ' matchmaking complete (host:' + hostId+', guest:'+socket.id+')')
             socket.join(pairId);
             socket.leave(conf.LOBBY_NAME);
-            socket.to(hostId).emit('finish matchmaking', pairId, true, hostId, socket.id);//ホスト(部屋全体)にもマッチング完了を伝える
-            socket.emit('finish matchmaking', pairId, false, hostId, socket.id);//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
+            socket.to(hostId).emit('response matchmaking', pairId, true, hostId, socket.id);//ホスト(部屋全体)にもマッチング完了を伝える
+            socket.emit('response matchmaking', pairId, false, hostId, socket.id);//ゲストが入ったらマッチング完了なのでゲスト側のクライアントにそう伝える
         }
     });
 
     /* 初期化: Hostのみがrequest */
-    await socket.on('request init', async(gameMode, round) => {
-        await place(socket, gameMode, round, 0);
+    await socket.on('request init', async(mode, round) => {
+        await place(socket, mode, round, 0);
     });
 
     /* messagingフェーズ: お互いが任意の時間にrequest　*/
-    await socket.on('request messaging', async (msg, dynamicParam) => {
+    await socket.on('request messaging', async (msg, game) => {
         const pairId = await getPairId(socket.id);
         socket.broadcast.to(pairId).emit('response messaging', msg);
         // logger.info('[game]' + socket.id + ' send message ' + JSON.stringify(msg) + ' at room' + pairId);
         //後手かどうか
-        const isSecond = Object.values((await sql('SELECT EXISTS(SELECT * FROM personals WHERE pair_id = ? AND current_round = ?)', [pairId, dynamicParam.round]))[0])[0];
+        const isSecond = Object.values((await sql('SELECT EXISTS(SELECT * FROM personals WHERE pair_id = ? AND current_round = ?)', [pairId, game.round]))[0])[0];
         const msgColumnArr = ['message0', 'message1']; //msg数を可変にするならこの辺いじる
         const msgArr = [msg[0].id, msg[1].id];
-        await sql('INSERT INTO personals (player_id, pair_id, game_mode, current_round, score, is_first, message_at, ??) VALUE (?,?)', [msgColumnArr, [socket.id, pairId, dynamicParam.gameMode, dynamicParam.round, dynamicParam.score, !isSecond, dynamicParam.time], msgArr]);
+        await sql('INSERT INTO personals (player_id, pair_id, game_mode, current_round, score, is_first, message_at, ??) VALUE (?,?)', [msgColumnArr, [socket.id, pairId, game.mode, game.round, game.score, !isSecond, game.time], msgArr]);
         if (isSecond) {
             socket.to(pairId).emit('finish messaging'); //これだけだと自分にemitされない　そういう仕様なのかも？
             socket.emit('finish messaging'); // 自分にemitされなかったので
@@ -81,34 +81,34 @@ io.on('connection', async (socket) => {
     });
 
     /* movingフェーズ: お互いが任意の時間にrequest */
-    await socket.on('request moving', async (dest,dynamicParam) => {
+    await socket.on('request moving', async (dest,game) => {
         const pairId = await getPairId(socket.id);
         const isHost =  await getIsHost(socket.id);
         const playerPostColumnName = isHost ? 'host_post' : 'guest_post';
-        await sql('UPDATE commons SET ?? = ? WHERE current_round = ? AND pair_id = ?', [playerPostColumnName, dest, dynamicParam.round, pairId]);
+        await sql('UPDATE commons SET ?? = ? WHERE current_round = ? AND pair_id = ?', [playerPostColumnName, dest, game.round, pairId]);
         //後手かどうか
-        const isSecond = Object.values((await sql('SELECT EXISTS(SELECT * FROM commons WHERE host_post IS NOT NULL AND guest_post IS NOT NULL AND pair_id = ? AND current_round = ?)', [pairId, dynamicParam.round]))[0])[0];
+        const isSecond = Object.values((await sql('SELECT EXISTS(SELECT * FROM commons WHERE host_post IS NOT NULL AND guest_post IS NOT NULL AND pair_id = ? AND current_round = ?)', [pairId, game.round]))[0])[0];
         if (isSecond) {
             socket.to(pairId).emit('finish moving'); //これだけだと自分にemitされない
             socket.emit('finish moving'); // 自分にemitされなかったので
-            const selectPost = (await sql('SELECT reward,host_post,guest_post FROM commons WHERE current_round = ? AND pair_id = ?', [dynamicParam.round, pairId]))[0];
-            const results = await judge(selectPost.reward, selectPost.host_post, selectPost.guest_post, dynamicParam.round, pairId);
+            const selectPost = (await sql('SELECT reward,host_post,guest_post FROM commons WHERE current_round = ? AND pair_id = ?', [game.round, pairId]))[0];
+            const results = await judge(selectPost.reward, selectPost.host_post, selectPost.guest_post);
             // logger.info('[game]' + JSON.stringify(results));
             
             const playerResult = await isHost ? results.hostResult : results.guestResult;
-            await sql('UPDATE personals SET score = score + ?, behavior = ?, behavior_at = ? WHERE current_round = ? AND player_id = ?', [playerResult.increment, playerResult.id, dynamicParam.time, dynamicParam.round, socket.id]);
+            await sql('UPDATE personals SET score = score + ?, behavior = ?, behavior_at = ? WHERE current_round = ? AND player_id = ?', [playerResult.increment, playerResult.id, game.time, game.round, socket.id]);
             await socket.emit('response judgment', playerResult); // 自分に
 
             const partnerResult = await isHost ? results.guestResult : results.hostResult;
-            await sql('UPDATE personals SET score = score + ?, behavior = ?, behavior_at = ? WHERE current_round = ? AND player_id IN (SELECT partner_id FROM players WHERE id = ?)', [partnerResult.increment, partnerResult.id, dynamicParam.time, dynamicParam.round, socket.id]);
+            await sql('UPDATE personals SET score = score + ?, behavior = ?, behavior_at = ? WHERE current_round = ? AND player_id IN (SELECT partner_id FROM players WHERE id = ?)', [partnerResult.increment, partnerResult.id, game.time, game.round, socket.id]);
             await socket.to(pairId).emit('response judgment', partnerResult); //パートナーに
 
             if (playerResult.isGet || partnerResult.isGet) {
                 //誰か報酬取得
-                await place(socket, dynamicParam.gameMode, dynamicParam.round + 1);
+                await place(socket, game.mode, game.round + 1);
             } else {
                 //誰も報酬取得していない
-                await through(socket, dynamicParam.gameMode, dynamicParam.round + 1, { reward: selectPost.reward, host: selectPost.host_post, guest: selectPost.guest_post });
+                await through(socket, game.mode, game.round + 1, { reward: selectPost.reward, host: selectPost.host_post, guest: selectPost.guest_post });
             }
         }
     });
@@ -121,19 +121,19 @@ io.on('connection', async (socket) => {
     });
 });
 
-async function place(socket, gameMode, round) {
+async function place(socket, mode, round) {
     const pairId = await getPairId(socket.id);
     const initialPre = createInitialPosDic(9);
     
-    await sql('INSERT INTO commons (pair_id, game_mode, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, gameMode, round, initialPre.reward, initialPre.host, initialPre.guest]]);
+    await sql('INSERT INTO commons (pair_id, game_mode, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, mode, round, initialPre.reward, initialPre.host, initialPre.guest]]);
     socket.emit('response placement', getVisibleDic(initialPre, true), getMovableList(initialPre.host), round);　//ホストの部屋割当情報をホストクライアントに送信
     socket.to(pairId).emit('response placement', getVisibleDic(initialPre, false), getMovableList(initialPre.guest),round); //ゲストの部屋割当情報をゲストクライアントに送信
         // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPre));
 }
 
-async function through(socket, gameMode, round, continuationPre) {
+async function through(socket, mode, round, continuationPre) {
     const pairId = await getPairId(socket.id);
-    await sql('INSERT INTO commons (pair_id, game_mode, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, gameMode, round, continuationPre.reward, continuationPre.host, continuationPre.guest]]);
+    await sql('INSERT INTO commons (pair_id, game_mode, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, mode, round, continuationPre.reward, continuationPre.host, continuationPre.guest]]);
     // await sql('UPDATE personals SET score = score + ? WHERE current_round = ? AND player_id = ?', [0, round, socket.id]);
     socket.emit('response placement', getVisibleDic(continuationPre, true), getMovableList(continuationPre.host), round);　//ホストの部屋割当情報をホストクライアントに送信
     socket.to(pairId).emit('response placement', getVisibleDic(continuationPre, false), getMovableList(continuationPre.guest), round); //ゲストの部屋割当情報をゲストクライアントに送信
@@ -142,7 +142,7 @@ async function through(socket, gameMode, round, continuationPre) {
 
 // async function getPreRound(){};
 
-async function judge(reward, host, guest, round, pairId) {
+async function judge(reward, host, guest) {
     const createResult = (judgmentName) => {
         const result = {};
         switch (judgmentName) {

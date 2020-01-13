@@ -2,11 +2,12 @@ export default (phina, conf, socket) => {
     // let currentShapeIndex = 0;
     // const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
     // const NumData = {};
-    let gameData = {
+    let game = {
         round: 1,
         score: 0,
         time: 0,
-        gameMode: 1,
+        mode: 1,
+        match: {},
         phase: 'placement',
         notification: conf.notification.initial,
     };
@@ -14,15 +15,17 @@ export default (phina, conf, socket) => {
     const historyList = [];
     phina.define('GameScene', {
         superClass: 'DisplayScene',
-        init: function (staticParam) {
-            gameData.time = 0;
-            gameData.score = 0;
-            if (staticParam.isHost) socket.emit('request init', gameData.gameMode, gameData.round);
+        init: function (param) {
+            game.time = 0;
+            game.score = 0;
+            game.mode = param.mode;
+            game.match = param.match;
+            if (game.match.isHost) socket.emit('request init', game.mode, game.round);
             const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
             const gy = this.gridY;
-            console.log(staticParam);
+            console.log(param.match);
             // RoomLabel(staticParam.pairId).addChildTo(this).setPosition(gx.span(0.5), gy.span(0.5));
             // IdLabel(staticParam.isHost ? staticParam.hostId : staticParam.guestId).addChildTo(this).setPosition(gx.span(0.5), gy.span(1));
             TimerLabel().addChildTo(this).setPosition(gx.span(0.5), gy.span(0.5));
@@ -36,66 +39,69 @@ export default (phina, conf, socket) => {
             // this.exit(param); //gameover
             // this.initPhase();
             socket.on('response placement', (visiblePosDic, movablePosList, round) => {
-                gameData.round = round;
+                game.round = round;
                 board.drawVisibleObj(visiblePosDic);
                 board.drawMovableCell(movablePosList, visiblePosDic);
                 this.nextPhase(); //nextphase
                 msgGroup.reset();
                 msgGroup.setEnabled(true);
-                gameData.notification = conf.notification.pleaseExchange;
+                game.notification = conf.notification.pleaseExchange;
             });
             socket.on('finish messaging', () => {
                 msgGroup.setEnabled(false);
                 this.nextPhase();
-                gameData.notification = conf.notification.pleaseMove;
+                game.notification = conf.notification.pleaseMove;
                 board.setEnabled(true);
             });
             socket.on('finish moving', () => {
                 board.setEnabled(false);
                 this.nextPhase();
-                gameData.notification = conf.notification.judging;
+                game.notification = conf.notification.judging;
             });
             socket.on('response judgment', (judgmentResult) => {
                 console.log(judgmentResult);
-                gameData.score += judgmentResult.increment;
+                game.score += judgmentResult.increment;
                 this.nextPhase();
-                gameData.notification = conf.notification.gettingReady;
+                game.notification = conf.notification.gettingReady;
                 // this.nextPhase(judgmentResult.nextPhase);
-                // if (judgmentResult.nextPhase === 'placement' && staticParam.isHost) socket.emit('request init', dynamicParam.round);
+                // if (judgmentResult.nextPhase === 'placement' && staticParam.isHost) socket.emit('request init', game.round);
                 // this.msgGroup.setEnabled(true);
                 // this.board.reset();
                 // this.msgGroup.reset();
                 board.reset();
             });
             socket.on('disconnect', async () => {
-                const selfId = staticParam.isHost ? staticParam.hostId : staticParam.guestId;
+                const selfId = game.match.isHost ? game.match.hostId : game.match.guestId;
                 console.log('Bye ' + selfId);
             });
         },
-        update: function (staticParam) { 
-            if (gameData.time >= conf.LIMIT_TIME) {
-                if (gameData.gameMode === 1) {
-                    this.exit('break',staticParam);
-                } else if(gameData.gameMode === 2) {
-                    this.exit('questionnaire', staticParam);
+        update: function (param) { 
+            if (game.time >= conf.LIMIT_TIME) {
+                if (game.mode === 1) {
+                    param.match = game.match;
+                    param.mode = 1;
+                    this.exit('break',param);
+                }
+                else if (game.mode === 2) {
+                    this.exit('questionnaire');
                 }
             }
         },
         nextPhase: function () {
-            switch (gameData.phase) {
+            switch (game.phase) {
                 case 'placement':
                     // this.msgGroup.setEnabled(true);
-                    gameData.phase = 'messaging';
+                    game.phase = 'messaging';
                     break;
                 case 'messaging':
                     // this.board.setEnabled(true);
-                    gameData.phase = 'moving';
+                    game.phase = 'moving';
                     break;
                 case 'moving':
-                    gameData.phase = 'judgment';
+                    game.phase = 'judgment';
                     break;
                 case 'judgment':
-                    gameData.phase = 'placement';
+                    game.phase = 'placement';
                     break;
                 default:
                     console.error('invaild phase name');
@@ -222,7 +228,7 @@ export default (phina, conf, socket) => {
             this.btn.onpush = () => {
                 if (this.currentShapeIndexList.includes(undefined)) {
                     this.btn.tweener.clear().by({ x: 20 }, 30, 'easeOutInElastic').by({ x: -40 }, 60, 'easeOutInElastic').by({ x: 20 }, 30, 'easeOutInElastic');
-                    gameData.notification = conf.notification.undecidedShape;
+                    game.notification = conf.notification.undecidedShape;
                 }
                 else {
                     // 送信ボタンと自分のフレームのクリック判定をオフ
@@ -236,7 +242,7 @@ export default (phina, conf, socket) => {
                     const sendShapeList = this.currentShapeIndexList.map((currentShapeIndex) => {
                         return shapeList[currentShapeIndex];
                     });
-                    socket.emit('request messaging', sendShapeList, gameData);
+                    socket.emit('request messaging', sendShapeList, game);
                 }
             };
         },
@@ -273,7 +279,7 @@ export default (phina, conf, socket) => {
             });
         },
         update: function () {
-            this.text = 'ROUND: ' + gameData.round;
+            this.text = 'ROUND: ' + game.round;
         },
     });
 
@@ -293,13 +299,13 @@ export default (phina, conf, socket) => {
             });
         },
         update: function () {
-            this.text = gameData.notification;
+            this.text = game.notification;
         },
         // temp: function (tempNotification) {
         //     this.text = tempNotification;
         //     wait(500);
         //    .tweener.wait(500).fadeOut(500).play();
-        //     this.text = dynamicParam.notification;
+        //     this.text = game.notification;
         // }
     })
 
@@ -314,7 +320,7 @@ export default (phina, conf, socket) => {
             });
         },
         update: function () {
-            this.text = gameData.phase;
+            this.text = game.phase;
         },
     });
 
@@ -353,7 +359,7 @@ export default (phina, conf, socket) => {
             });
         },
         update: function () {
-            this.text = 'SCORE: ' + gameData.score;
+            this.text = 'SCORE: ' + game.score;
         },
     });
 
@@ -369,8 +375,8 @@ export default (phina, conf, socket) => {
             // globalGameData.time = 0;
         },
         update: function (app) {
-            gameData.time += app.deltaTime;
-            const secTime = gameData.time / 1000;
+            game.time += app.deltaTime;
+            const secTime = game.time / 1000;
             const min = ('00' + Math.floor(secTime / 60)).slice(-2);
             const sec = ('00' + Math.floor(secTime % 60)).slice(-2);
             this.text = 'TIME: ' + min + ':' + sec; // 経過秒数表示
@@ -485,8 +491,8 @@ export default (phina, conf, socket) => {
             }).addChildTo(this);
             this.btn.onpush = () => {
                 this.setEnabled(false);
-                gameData.notification = conf.notification.waitPartner;
-                socket.emit('request moving', this.dest, gameData);
+                game.notification = conf.notification.waitPartner;
+                socket.emit('request moving', this.dest, game);
             }
         },
         reset: function () {

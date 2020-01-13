@@ -4,6 +4,7 @@ import startScene from './scene-start.js';
 import matchmakingScene from './scene-matchmaking.js';
 import gameScene from './scene-game.js';
 import breakScene from './scene-break.js';
+import questionnaireScene from './scene-questionnaire.js';
 
 browserOpe(UAParser);//ユーザーのゲーム実施環境(ブラウザ)に関する初期設定
 
@@ -49,8 +50,9 @@ phina.main(() => {
 });
 
 startScene(phina, conf);
-const socket = io();
+const socket = io.connect();
 // socket.on('connect', () => {console.log('You are '+socket.id)});
 matchmakingScene(phina, conf, socket);
 gameScene(phina, conf, socket);
 breakScene(phina, conf, socket);
+questionnaireScene(phina, conf, socket);
