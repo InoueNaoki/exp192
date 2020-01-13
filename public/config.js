@@ -5,7 +5,7 @@ export default {
         "height": 1080,
         "backgroundColor": "white"
     },
-    "FINISH_TIME": 60000,
+    "LIMIT_TIME": 5000,
     "MSG_NUM": 2,
     "MSG_FRAME_SIZE": 150,
     "ENABLE_BUTTON_COLOR": "skyblue",

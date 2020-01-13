@@ -2,7 +2,7 @@ export default (phina, conf, socket) => {
     // let currentShapeIndex = 0;
     // const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
     // const NumData = {};
-    const dynamicParam = {
+    let gameData = {
         round: 1,
         score: 0,
         time: 0,
@@ -10,11 +10,14 @@ export default (phina, conf, socket) => {
         phase: 'placement',
         notification: conf.notification.initial,
     };
+    let notification = conf.notification.initial;
     const historyList = [];
-    phina.define('Game1Scene', {
+    phina.define('GameScene', {
         superClass: 'DisplayScene',
         init: function (staticParam) {
-            if (staticParam.isHost) socket.emit('request init', dynamicParam.gameMode, dynamicParam.round);
+            gameData.time = 0;
+            gameData.score = 0;
+            if (staticParam.isHost) socket.emit('request init', gameData.gameMode, gameData.round);
             const shapeList = conf.SHAPE_LIST.shuffle(); //図形の出現順によるバイアスをなくすためにシャッフル .shuffle()はphina独自の記法
             this.superInit(conf.SCREEN);
             const gx = this.gridX;
@@ -33,30 +36,30 @@ export default (phina, conf, socket) => {
             // this.exit(param); //gameover
             // this.initPhase();
             socket.on('response placement', (visiblePosDic, movablePosList, round) => {
-                dynamicParam.round = round;
+                gameData.round = round;
                 board.drawVisibleObj(visiblePosDic);
                 board.drawMovableCell(movablePosList, visiblePosDic);
                 this.nextPhase(); //nextphase
                 msgGroup.reset();
                 msgGroup.setEnabled(true);
-                dynamicParam.notification = conf.notification.pleaseExchange;
+                gameData.notification = conf.notification.pleaseExchange;
             });
             socket.on('finish messaging', () => {
                 msgGroup.setEnabled(false);
                 this.nextPhase();
-                dynamicParam.notification = conf.notification.pleaseMove;
+                gameData.notification = conf.notification.pleaseMove;
                 board.setEnabled(true);
             });
             socket.on('finish moving', () => {
                 board.setEnabled(false);
                 this.nextPhase();
-                dynamicParam.notification = conf.notification.judging;
+                gameData.notification = conf.notification.judging;
             });
             socket.on('response judgment', (judgmentResult) => {
                 console.log(judgmentResult);
-                dynamicParam.score += judgmentResult.increment;
+                gameData.score += judgmentResult.increment;
                 this.nextPhase();
-                dynamicParam.notification = conf.notification.gettingReady;
+                gameData.notification = conf.notification.gettingReady;
                 // this.nextPhase(judgmentResult.nextPhase);
                 // if (judgmentResult.nextPhase === 'placement' && staticParam.isHost) socket.emit('request init', dynamicParam.round);
                 // this.msgGroup.setEnabled(true);
@@ -70,26 +73,29 @@ export default (phina, conf, socket) => {
             });
         },
         update: function (staticParam) { 
-            if (dynamicParam.time >= 10000) {
-                console.log('time10000');
-                this.exit(staticParam);
+            if (gameData.time >= conf.LIMIT_TIME) {
+                if (gameData.gameMode === 1) {
+                    this.exit('break',staticParam);
+                } else if(gameData.gameMode === 2) {
+                    this.exit('questionnaire', staticParam);
+                }
             }
         },
         nextPhase: function () {
-            switch (dynamicParam.phase) {
+            switch (gameData.phase) {
                 case 'placement':
                     // this.msgGroup.setEnabled(true);
-                    dynamicParam.phase = 'messaging';
+                    gameData.phase = 'messaging';
                     break;
                 case 'messaging':
                     // this.board.setEnabled(true);
-                    dynamicParam.phase = 'moving';
+                    gameData.phase = 'moving';
                     break;
                 case 'moving':
-                    dynamicParam.phase = 'judgment';
+                    gameData.phase = 'judgment';
                     break;
                 case 'judgment':
-                    dynamicParam.phase = 'placement';
+                    gameData.phase = 'placement';
                     break;
                 default:
                     console.error('invaild phase name');
@@ -216,7 +222,7 @@ export default (phina, conf, socket) => {
             this.btn.onpush = () => {
                 if (this.currentShapeIndexList.includes(undefined)) {
                     this.btn.tweener.clear().by({ x: 20 }, 30, 'easeOutInElastic').by({ x: -40 }, 60, 'easeOutInElastic').by({ x: 20 }, 30, 'easeOutInElastic');
-                    dynamicParam.notification = conf.notification.undecidedShape;
+                    gameData.notification = conf.notification.undecidedShape;
                 }
                 else {
                     // 送信ボタンと自分のフレームのクリック判定をオフ
@@ -230,7 +236,7 @@ export default (phina, conf, socket) => {
                     const sendShapeList = this.currentShapeIndexList.map((currentShapeIndex) => {
                         return shapeList[currentShapeIndex];
                     });
-                    socket.emit('request messaging', sendShapeList, dynamicParam);
+                    socket.emit('request messaging', sendShapeList, gameData);
                 }
             };
         },
@@ -267,7 +273,7 @@ export default (phina, conf, socket) => {
             });
         },
         update: function () {
-            this.text = 'ROUND: ' + dynamicParam.round;
+            this.text = 'ROUND: ' + gameData.round;
         },
     });
 
@@ -287,7 +293,7 @@ export default (phina, conf, socket) => {
             });
         },
         update: function () {
-            this.text = dynamicParam.notification;
+            this.text = gameData.notification;
         },
         // temp: function (tempNotification) {
         //     this.text = tempNotification;
@@ -308,7 +314,7 @@ export default (phina, conf, socket) => {
             });
         },
         update: function () {
-            this.text = dynamicParam.phase;
+            this.text = gameData.phase;
         },
     });
 
@@ -347,7 +353,7 @@ export default (phina, conf, socket) => {
             });
         },
         update: function () {
-            this.text = 'SCORE: ' + dynamicParam.score;
+            this.text = 'SCORE: ' + gameData.score;
         },
     });
 
@@ -363,8 +369,8 @@ export default (phina, conf, socket) => {
             // globalGameData.time = 0;
         },
         update: function (app) {
-            dynamicParam.time += app.deltaTime;
-            const secTime = dynamicParam.time / 1000;
+            gameData.time += app.deltaTime;
+            const secTime = gameData.time / 1000;
             const min = ('00' + Math.floor(secTime / 60)).slice(-2);
             const sec = ('00' + Math.floor(secTime % 60)).slice(-2);
             this.text = 'TIME: ' + min + ':' + sec; // 経過秒数表示
@@ -479,8 +485,8 @@ export default (phina, conf, socket) => {
             }).addChildTo(this);
             this.btn.onpush = () => {
                 this.setEnabled(false);
-                dynamicParam.notification = conf.notification.waitPartner;
-                socket.emit('request moving', this.dest, dynamicParam);
+                gameData.notification = conf.notification.waitPartner;
+                socket.emit('request moving', this.dest, gameData);
             }
         },
         reset: function () {

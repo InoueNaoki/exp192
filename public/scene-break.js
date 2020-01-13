@@ -18,7 +18,7 @@ export default (phina, conf, socket) => {
                 .addChildTo(this)
                 .setPosition(this.gridX.center(), this.gridY.center(2))
                 .onpointstart = () => {
-                    this.exit();//to GameScene
+                    this.exit(staticParam);//to GameScene
                 };
             // this.exit(param);// to placementScene
         },

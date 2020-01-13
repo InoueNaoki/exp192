@@ -1,20 +1,27 @@
 /* express初期設定 */
-const express = require('express');
+const express = require('express')
+const http = require('http');
+//make sure you keep this order
 const app = express();
-const http = require('http').createServer(app);
+const server = http.createServer(app);
+const io = require('socket.io').listen(server); //io.sockets.adapter.rooms[LOBBY_NAME]
+
 const util = require('util');
 const conf = require('config'); //サーバーサイド設定ファイル
-const port = 3000;
-const ip = '127.0.0.1';
+const port = conf.server.port;
+const ip = conf.server.ip;
+
 /* ファイル読み込み */
 app.use(express.static('public')); //クライアントサイド
-
-/* socket.io初期設定 */
-const io = require('socket.io')(http); // io.sockets.adapter.rooms[LOBBY_NAME]にオブジェクト形式で接続中の"すべての"クライアントの情報入ってる
 
 /*　mysql初期設定　*/
 const mysql = require('mysql');
 const dbConfig = conf.mysql;
+
+server.listen(port, ip, () => {
+    // logger.info('[nodejs]port:' + port);
+    // logger.info('[nodejs]ip:' + ip);
+});
 
 /* socket.io接続 */
 io.on('connection', async (socket) => {
@@ -112,11 +119,6 @@ io.on('connection', async (socket) => {
         // console.log(await getIsHost(socket.id)); //socketidがinitialのままの人が切断したときちょっと不安
         // logger.info('[socket.io]' + socket.id + ' disconnected');
     });
-});
-
-http.listen(port, ip, () => {
-    // logger.info('[nodejs]port:' + port);
-    // logger.info('[nodejs]ip:' + ip);
 });
 
 async function place(socket, gameMode, round) {
