@@ -50,8 +50,7 @@ phina.main(() => {
 });
 
 startScene(phina, conf);
-const socket = io.connect();
-// socket.on('connect', () => {console.log('You are '+socket.id)});
+const socket = io.connect('10.70.175.109:3000');
 matchmakingScene(phina, conf, socket);
 gameScene(phina, conf, socket);
 breakScene(phina, conf, socket);

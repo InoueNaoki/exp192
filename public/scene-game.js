@@ -70,6 +70,9 @@ export default (phina, conf, socket) => {
                 // this.msgGroup.reset();
                 board.reset();
             });
+            socket.on('connect', async () => {
+                console.log('Welcome ' + socket.id);
+            });
             socket.on('disconnect', async () => {
                 const selfId = game.match.isHost ? game.match.hostId : game.match.guestId;
                 console.log('Bye ' + selfId);

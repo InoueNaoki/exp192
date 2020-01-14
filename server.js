@@ -92,8 +92,8 @@ io.on('connection', async (socket) => {
             socket.to(pairId).emit('finish moving'); //これだけだと自分にemitされない
             socket.emit('finish moving'); // 自分にemitされなかったので
             const selectPost = (await sql('SELECT reward,host_post,guest_post FROM commons WHERE current_round = ? AND pair_id = ?', [game.round, pairId]))[0];
-            const results = await judge(selectPost.reward, selectPost.host_post, selectPost.guest_post);
-            // logger.info('[game]' + JSON.stringify(results));
+            const results = await judge(selectPost.reward, selectPost.host_post, selectPost.guest_post, game.mode);
+            console.log('[game]' + JSON.stringify(results));
             
             const playerResult = await isHost ? results.hostResult : results.guestResult;
             await sql('UPDATE personals SET score = score + ?, behavior = ?, behavior_at = ? WHERE current_round = ? AND player_id = ?', [playerResult.increment, playerResult.id, game.time, game.round, socket.id]);
@@ -142,28 +142,32 @@ async function through(socket, mode, round, continuationPre) {
 
 // async function getPreRound(){};
 
-async function judge(reward, host, guest) {
+async function judge(reward, host, guest, mode) {
     const createResult = (judgmentName) => {
         const result = {};
         switch (judgmentName) {
             case 'continuation':
                 result.id = 'c';
-                result.increment = conf.payoff.continuation;
+                if (mode === 1) result.increment = conf.payoff.game1.continuation;
+                else if (mode === 2) result.increment = conf.payoff.game2.continuation;
                 result.isGet = false;
                 break;
             case 'sharing':
                 result.id = 's';
-                result.increment = conf.payoff.sharing;
+                if (mode === 1) result.increment = conf.payoff.game1.sharing;
+                else if (mode === 2) result.increment = conf.payoff.game2.sharing;
                 result.isGet = true;
                 break;
             case 'monopoly':
                 result.id = 'm';
-                result.increment = conf.payoff.monopoly;
+                if (mode === 1) result.increment = conf.payoff.game1.monopoly;
+                else if (mode === 2) result.increment = conf.payoff.game2.monopoly;
                 result.isGet = true;
                 break;
             case 'failure':
                 result.id = 'f';
-                result.increment = conf.payoff.failure;
+                if (mode === 1) result.increment = conf.payoff.game1.failure;
+                else if (mode === 2) result.increment = conf.payoff.game2.failure;
                 result.isGet = false;
                 break;
             default:
@@ -197,16 +201,16 @@ async function judge(reward, host, guest) {
  * @param {String} sqlStatement SQL文 
  */
 async function sql(sqlStatement, placeholder) {
-    // logger.trace('[mysql.query]' + sqlStatement +','+placeholder);//投げられた文をトレース
+    console.log('[mysql.query]' + sqlStatement +','+placeholder);//投げられた文をトレース
     const pool = mysql.createPool(dbConfig);
     pool.query = util.promisify(pool.query);
     try {
         const result = await pool.query(sqlStatement, placeholder);
-        // logger.trace('[mysql.result]' + JSON.stringify(result)); //実行結果を返す．そのまま連結すると中身が見れなくなるのでJSON.stringify()を使用
+        console.log('[mysql.result]' + JSON.stringify(result)); //実行結果を返す．そのまま連結すると中身が見れなくなるのでJSON.stringify()を使用
         pool.end();
         return result;
     } catch (err) {
-        // throw logger.error(err);
+        throw err;
     }
 }
 
