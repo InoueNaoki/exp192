@@ -1,13 +1,13 @@
 export default (UAParser)=>{
     //モバイルからアクセスがあった場合アクセス拒否
-    if(UAParser().device.type === 'mobile') {
-        alert('PCからアクセスしてください');
-        location.replace('https://moritalab.inf.shizuoka.ac.jp/sites/inf-and-mind2019/');//戻るURL指定
-    }
+    // if(UAParser().device.type === 'mobile') {
+    //     alert('PCからアクセスしてください');
+    //     location.replace('https://moritalab.inf.shizuoka.ac.jp/sites/inf-and-mind2019/');//戻るURL指定
+    // }
 
     // Chrome以外から閲覧されている場合アクセス拒否
     if (UAParser().browser.name !== 'Chrome' && UAParser().browser.name !== 'Firefox') {
-            alert('ブラウザをChromeに変更してください');
+            alert('ブラウザをChromeかFireFoxに変更してください');
             location.replace('https://moritalab.inf.shizuoka.ac.jp/sites/inf-and-mind2019/');//戻るURL指定  
     }
     

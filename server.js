@@ -16,33 +16,33 @@ app.use(express.static('public')); //クライアントサイド
 
 /*　mysql初期設定　*/
 const mysql = require('mysql');
-const dbConfig = conf.mysql;
+const pool = mysql.createPool(conf.mysql);
 
 server.listen(port, ip, () => {
-    // logger.info('[nodejs]port:' + port);
-    // logger.info('[nodejs]ip:' + ip);
+    console.log('[nodejs]port:' + port);
+    console.log('[nodejs]ip:' + ip);
 });
 
 /* socket.io接続 */
 io.on('connection', async (socket) => {
     // const userId = socket.id;　//現時点ではソケットIDで代用，いずれはCookieかユーザー記入式のIDで対応
     // socket.id = 'hoge'; //でID変更可能
-    // logger.info('[socket.io]' + socket.id + ' connected successfully');
+    console.log('[socket.io]' + socket.id + ' connected successfully');
     
     /* マッチメイキング　*/
     await socket.on('request matchmaking', async () => {
         socket.join(conf.LOBBY_NAME); // 待機ロビーに入室
-        // logger.info('[socket.io]' + socket.id + ' joined lobby');
+        console.log('[socket.io]' + socket.id + ' joined lobby');
         await sql('INSERT INTO players SET id = ?', [socket.id]);
-        // logger.info('[socket.io]' + socket.id + ' changed socket.id to ' + player.name);
+        // console.log('[socket.io]' + socket.id + ' changed socket.id to ' + player.name);
         const mostWaitingPairId = (await sql('SELECT MIN(id) FROM pairs WHERE guest_id IS NULL'))[0]['MIN(id)'];
         if (!mostWaitingPairId) { 
             // Hosts
             await sql('UPDATE players SET is_host = true WHERE id = ?', [socket.id]);
             const pairId = (await sql('INSERT INTO pairs SET host_id = ?', [socket.id]))['insertId'];
-            // logger.info('[game]' + socket.id + ' is host of room' + pairId);
-            socket.join(pairId);
+            console.log('[game]' + socket.id + ' is host of room' + pairId);
             socket.leave(conf.LOBBY_NAME);
+            socket.join(pairId);
         } else {
             // Guest
             const pairId = mostWaitingPairId;
@@ -50,8 +50,8 @@ io.on('connection', async (socket) => {
             const hostId = (await sql('SELECT host_id FROM pairs WHERE id = ?', [pairId]))[0]['host_id'];
             await sql('UPDATE players SET is_host = false, partner_id = ? WHERE id = ?', [hostId, socket.id]);
             await sql('UPDATE players SET partner_id = ? WHERE id = ?', [socket.id, hostId]); //hostのパートナーは自分
-            // logger.info('[game]' + socket.id + ' is guest of room' + pairId);
-            // logger.info('[game] pair' + pairId + ' matchmaking complete (host:' + hostId+', guest:'+socket.id+')')
+            console.log('[game]' + socket.id + ' is guest of room' + pairId);
+            console.log('[game] pair' + pairId + ' matchmaking complete (host:' + hostId+', guest:'+socket.id+')')
             socket.join(pairId);
             socket.leave(conf.LOBBY_NAME);
             socket.to(hostId).emit('response matchmaking', pairId, true, hostId, socket.id);//ホスト(部屋全体)にもマッチング完了を伝える
@@ -68,7 +68,7 @@ io.on('connection', async (socket) => {
     await socket.on('request messaging', async (msg, game) => {
         const pairId = await getPairId(socket.id);
         socket.broadcast.to(pairId).emit('response messaging', msg);
-        // logger.info('[game]' + socket.id + ' send message ' + JSON.stringify(msg) + ' at room' + pairId);
+        console.log('[game]' + socket.id + ' send message ' + JSON.stringify(msg) + ' at room' + pairId);
         //後手かどうか
         const isSecond = Object.values((await sql('SELECT EXISTS(SELECT * FROM personals WHERE pair_id = ? AND current_round = ?)', [pairId, game.round]))[0])[0];
         const msgColumnArr = ['message0', 'message1']; //msg数を可変にするならこの辺いじる
@@ -117,7 +117,7 @@ io.on('connection', async (socket) => {
     socket.on('disconnect', async () => {
         // const role = getIsHost(socket.id) ? 'host' : 'guest';
         // console.log(await getIsHost(socket.id)); //socketidがinitialのままの人が切断したときちょっと不安
-        // logger.info('[socket.io]' + socket.id + ' disconnected');
+        console.log('[socket.io]' + socket.id + ' disconnected');
     });
 });
 
@@ -128,7 +128,7 @@ async function place(socket, mode, round) {
     await sql('INSERT INTO commons (pair_id, game_mode, current_round, reward, host_pre, guest_pre) VALUE (?)', [[pairId, mode, round, initialPre.reward, initialPre.host, initialPre.guest]]);
     socket.emit('response placement', getVisibleDic(initialPre, true), getMovableList(initialPre.host), round);　//ホストの部屋割当情報をホストクライアントに送信
     socket.to(pairId).emit('response placement', getVisibleDic(initialPre, false), getMovableList(initialPre.guest),round); //ゲストの部屋割当情報をゲストクライアントに送信
-        // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPre));
+    console.log('[game]pair' + pairId + ' are placed ' + JSON.stringify(initialPre));
 }
 
 async function through(socket, mode, round, continuationPre) {
@@ -137,7 +137,7 @@ async function through(socket, mode, round, continuationPre) {
     // await sql('UPDATE personals SET score = score + ? WHERE current_round = ? AND player_id = ?', [0, round, socket.id]);
     socket.emit('response placement', getVisibleDic(continuationPre, true), getMovableList(continuationPre.host), round);　//ホストの部屋割当情報をホストクライアントに送信
     socket.to(pairId).emit('response placement', getVisibleDic(continuationPre, false), getMovableList(continuationPre.guest), round); //ゲストの部屋割当情報をゲストクライアントに送信
-    // logger.info('[game]pair(' + socket.id + ', ' + guestId + ') were assigned ' + JSON.stringify(initialPre));
+    console.log('[game]pair' + pairId + ' go through ' + JSON.stringify(continuationPre));
 }
 
 // async function getPreRound(){};
@@ -202,12 +202,10 @@ async function judge(reward, host, guest, mode) {
  */
 async function sql(sqlStatement, placeholder) {
     console.log('[mysql.query]' + sqlStatement +','+placeholder);//投げられた文をトレース
-    const pool = mysql.createPool(dbConfig);
     pool.query = util.promisify(pool.query);
     try {
         const result = await pool.query(sqlStatement, placeholder);
         console.log('[mysql.result]' + JSON.stringify(result)); //実行結果を返す．そのまま連結すると中身が見れなくなるのでJSON.stringify()を使用
-        pool.end();
         return result;
     } catch (err) {
         throw err;

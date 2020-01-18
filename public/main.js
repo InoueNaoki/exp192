@@ -50,7 +50,7 @@ phina.main(() => {
 });
 
 startScene(phina, conf);
-const socket = io.connect('10.70.175.109:3000');
+const socket = io.connect(conf.ip+':'+conf.port);
 matchmakingScene(phina, conf, socket);
 gameScene(phina, conf, socket);
 breakScene(phina, conf, socket);
