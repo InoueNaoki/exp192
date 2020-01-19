@@ -39,8 +39,13 @@ export default {
         { "id": 0, "name": "circle" },
         { "id": 1, "name": "triangle" },
         { "id": 2, "name": "square" },
-        { "id": 3, "name": "hexagon" }
-        // { "id": 4, "name": "diamond" },
-        // { "id": 5, "name": "octagon" },
+        { "id": 3, "name": "hexagon" },
+        { "id": 4, "name": "diamond" },
+        { "id": 5, "name": "octagon" },
+        { "id": 6, "name": "trapezoid" },
+        { "id": 7, "name": "parallelogram" },
+        { "id": 8, "name": "rightTriangle" }
     ],
+    "port": 3000,
+    "ip": "localhost"
 };

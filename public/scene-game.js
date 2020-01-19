@@ -215,6 +215,38 @@ export default (phina, conf, socket) => {
                         rotation: 22.5,
                     }).addChildTo(parent);
                     break;
+                case 'trapezoid':
+                    PathShape({
+                        paths: [
+                            Vector2(-conf.MSG_FRAME_SIZE * 0.2, -conf.MSG_FRAME_SIZE * 0.4),
+                            Vector2(conf.MSG_FRAME_SIZE * 0.2, -conf.MSG_FRAME_SIZE * 0.4),
+                            Vector2(conf.MSG_FRAME_SIZE * 0.4, conf.MSG_FRAME_SIZE * 0.4),
+                            Vector2(-conf.MSG_FRAME_SIZE * 0.4, conf.MSG_FRAME_SIZE * 0.4)
+                        ],
+                        fill: conf.SHAPE_COLOR
+                    }).addChildTo(parent);
+                    break;
+                case 'parallelogram':
+                    PathShape({
+                        paths: [
+                            Vector2(-conf.MSG_FRAME_SIZE * 0.2, -conf.MSG_FRAME_SIZE * 0.4),
+                            Vector2(conf.MSG_FRAME_SIZE * 0.4, -conf.MSG_FRAME_SIZE * 0.4),
+                            Vector2(conf.MSG_FRAME_SIZE * 0.2, conf.MSG_FRAME_SIZE * 0.4),
+                            Vector2(-conf.MSG_FRAME_SIZE * 0.4, conf.MSG_FRAME_SIZE * 0.4)
+                        ],
+                        fill: conf.SHAPE_COLOR
+                    }).addChildTo(parent);
+                    break;
+                case 'rightTriangle':
+                    PathShape({
+                        paths: [
+                            Vector2(conf.MSG_FRAME_SIZE * 0.4, -conf.MSG_FRAME_SIZE * 0.4),
+                            Vector2(-conf.MSG_FRAME_SIZE * 0.4, conf.MSG_FRAME_SIZE * 0.4),
+                            Vector2(conf.MSG_FRAME_SIZE * 0.4, conf.MSG_FRAME_SIZE * 0.4)
+                        ],
+                        fill: conf.SHAPE_COLOR
+                    }).addChildTo(parent);
+                    break;
                 default:
                     console.error('Invaild currentShapeIndex value:' + currentShapeIndex);
                     break;
