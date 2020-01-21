@@ -8,24 +8,24 @@ const io = require('socket.io').listen(server); //io.sockets.adapter.rooms[LOBBY
 
 const util = require('util');
 const conf = require('config'); //サーバーサイド設定ファイル
-const port = conf.server.port;
-const ip = conf.server.ip;
+
+server.listen(conf.server.port, conf.server.ip);
 
 /* ファイル読み込み */
 app.use(express.static('public')); //クライアントサイド
+app.post('/index.html', (req, res) => {
+    console.log(req.body);
+    res.send(req.body);
+});
 
 /*　mysql初期設定　*/
 const mysql = require('mysql');
 const pool = mysql.createPool(conf.mysql);
 
-server.listen(port, ip, () => {
-    console.log('[nodejs]port:' + port);
-    console.log('[nodejs]ip:' + ip);
-});
-
 /* socket.io接続 */
 io.on('connection', async (socket) => {
     // const userId = socket.id;　//現時点ではソケットIDで代用，いずれはCookieかユーザー記入式のIDで対応
+    
     // socket.id = 'hoge'; //でID変更可能
     console.log('[socket.io]' + socket.id + ' connected successfully');
     
@@ -71,8 +71,8 @@ io.on('connection', async (socket) => {
         console.log('[game]' + socket.id + ' send message ' + JSON.stringify(msg) + ' at room' + pairId);
         //後手かどうか
         const isSecond = Object.values((await sql('SELECT EXISTS(SELECT * FROM personals WHERE pair_id = ? AND current_round = ?)', [pairId, game.round]))[0])[0];
-        const msgColumnArr = ['message0', 'message1']; //msg数を可変にするならこの辺いじる
-        const msgArr = [msg[0].id, msg[1].id];
+        const msgColumnArr = ['message0', 'message1', 'message2']; //msg数を可変にするならこの辺いじる
+        const msgArr = [msg[0].id, msg[1].id, msg[2].id];
         await sql('INSERT INTO personals (player_id, pair_id, game_mode, current_round, score, is_first, message_at, ??) VALUE (?,?)', [msgColumnArr, [socket.id, pairId, game.mode, game.round, game.score, !isSecond, game.time], msgArr]);
         if (isSecond) {
             socket.to(pairId).emit('finish messaging'); //これだけだと自分にemitされない　そういう仕様なのかも？

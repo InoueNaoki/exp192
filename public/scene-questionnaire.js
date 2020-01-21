@@ -5,7 +5,7 @@ export default (phina, conf, socket) => {
             console.log(param);
             this.superInit(conf.SCREEN);
             Label({
-                text: 'おつかれさまでした\n最後にアンケートにご協力ください',
+                text: conf.QUESTIONNAIRE_MSG,
                 fontSize: conf.FONT_SIZE,
             })
                 .addChildTo(this)

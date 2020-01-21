@@ -5,8 +5,8 @@ export default {
         "height": 1080,
         "backgroundColor": "white"
     },
-    "LIMIT_TIME": 60000*20,
-    "MSG_NUM": 2,
+    "LIMIT_TIME": 60000 * 1,
+    "MSG_NUM": 3,
     "MSG_FRAME_SIZE": 150,
     "ENABLE_BUTTON_COLOR": "skyblue",
     "DISABLE_BUTTON_COLOR": "lightgray",
@@ -30,11 +30,12 @@ export default {
         'undecidedShape': 'メッセージを全て入力してから送信してください',
         'receivedMessage': '相手からメッセージが届きました',
         'pleaseMove': '移動先を選択し，送信してください',
-        'judging': '判定中...',
+        'judging': '判定中...'
     },
     "MATCHMAKING_MSG": "マッチング中......\nブラウザを閉じないでください",
     "COMPLETE_MATCHMAKE_MSG": "マッチング成立！\nしばらくこのままお待ち下さい",
     "BREAKING_MSG": "お疲れさまでした．\n下のボタンを押してゲーム２を始めてください",
+    "QUESTIONNAIRE_MSG": "おつかれさまでした\n最後にアンケートにご協力ください\nアンケートに回答し終えるまで絶対にこの画面を閉じないでください",
     "SHAPE_LIST": [
         { "id": 0, "name": "circle" },
         { "id": 1, "name": "triangle" },
@@ -46,6 +47,4 @@ export default {
         { "id": 7, "name": "parallelogram" },
         { "id": 8, "name": "rightTriangle" }
     ],
-    "port": 3000,
-    "ip": "localhost"
 };

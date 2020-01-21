@@ -11,8 +11,8 @@ export default (phina, conf, socket) => {
         phase: 'placement',
         notification: conf.notification.initial,
     };
-    let notification = conf.notification.initial;
-    const historyList = [];
+    // let notification = conf.notification.initial;
+    // const historyList = [];
     phina.define('GameScene', {
         superClass: 'DisplayScene',
         init: function (param) {
@@ -34,7 +34,7 @@ export default (phina, conf, socket) => {
             // PhaseLabel().addChildTo(this).setPosition(gx.span(4), gy.span(0.5));
             NotificationLabel().addChildTo(this).setPosition(gx.span(7), gy.span(2));
             const board = Board().addChildTo(this).setPosition(gx.span(3), gy.span(6));
-            board.reset();
+            // board.reset();
             const msgGroup = MsgGroup(shapeList).addChildTo(this).setPosition(gx.span(8), gy.span(7));
             // this.exit(param); //gameover
             // this.initPhase();
@@ -43,8 +43,8 @@ export default (phina, conf, socket) => {
                 board.drawVisibleObj(visiblePosDic);
                 board.drawMovableCell(movablePosList, visiblePosDic);
                 this.nextPhase(); //nextphase
-                msgGroup.reset();
-                msgGroup.setEnabled(true);
+                // msgGroup.reset();
+                // msgGroup.setEnabled(true);
                 game.notification = conf.notification.pleaseExchange;
             });
             socket.on('finish messaging', () => {
@@ -65,9 +65,8 @@ export default (phina, conf, socket) => {
                 game.notification = conf.notification.gettingReady;
                 // this.nextPhase(judgmentResult.nextPhase);
                 // if (judgmentResult.nextPhase === 'placement' && staticParam.isHost) socket.emit('request init', game.round);
-                // this.msgGroup.setEnabled(true);
-                // this.board.reset();
-                // this.msgGroup.reset();
+                msgGroup.reset();
+                msgGroup.setEnabled(true);
                 board.reset();
             });
             socket.on('connect', async () => {
@@ -169,6 +168,16 @@ export default (phina, conf, socket) => {
                 });
             }
         },
+        // closeAddBtn: function (isSelfMsg, shapeList, i, parent){
+        //     Button({
+        //         width: conf.MSG_FRAME_SIZE/3,
+        //         height: conf.MSG_FRAME_SIZE/3,
+        //         fill: 'seagreen',
+        //         text: '+',
+        //         cornerRadius: 0,
+        //         x: conf.MSG_FRAME_SIZE * i
+        //     }).addChildTo(parent);
+        // },
         drawShape: function (shape, parent) {
             parent.text = '';
             parent.children.clear(); //既にある画像を削除
@@ -257,7 +266,7 @@ export default (phina, conf, socket) => {
                 text: 'SEND',
                 fontSize: conf.FONT_SIZE,
                 fill: conf.ENABLE_BUTTON_COLOR,
-                x: conf.MSG_FRAME_SIZE * conf.MSG_NUM / 4,
+                x: conf.MSG_FRAME_SIZE,
                 y: conf.MSG_FRAME_SIZE * 0.8,
             }).addChildTo(parent);
             this.btn.onpush = () => {
@@ -283,14 +292,12 @@ export default (phina, conf, socket) => {
         },
         reset: function () {
             this.currentShapeIndexList.fill(undefined);
-            this.selfMsgGroup.children[0].children.clear();
-            this.selfMsgGroup.children[0].text = 'click';
-            this.selfMsgGroup.children[1].children.clear();
-            this.selfMsgGroup.children[1].text = 'click';
-            this.partnerMsgGroup.children[0].children.clear();
-            this.partnerMsgGroup.children[0].text = 'waiting';
-            this.partnerMsgGroup.children[1].children.clear();
-            this.partnerMsgGroup.children[1].text = 'waiting';
+            [...Array(conf.MSG_NUM)].forEach((_, i) => {
+                this.selfMsgGroup.children[i].children.clear();
+                this.selfMsgGroup.children[i].text = 'click';
+                this.partnerMsgGroup.children[i].children.clear();
+                this.partnerMsgGroup.children[i].text = 'waiting';
+            });
         },
         setEnabled: function (bool) {
             this.children.forEach((msgField) => {
@@ -493,15 +500,6 @@ export default (phina, conf, socket) => {
             }
             if (selfPos === rewardPos) {
                 this.rewardAvater.setPosition(bg(rewardPos).x, bg(rewardPos).y - 30);
-                // const rect = RectangleShape({
-                //     width: conf.CELL_SIZE * 0.5,
-                //     fill: 'MISTYROSE',
-                //     cornerRadius: conf.CELL_SIZE * 0.05
-                // }).addChildTo(this).setPosition(bg(rewardPos).x - 50, bg(rewardPos).y + 50);
-                // Label({
-                //     text: 'GET!',
-                //     fill: 'CRIMSON'
-                // }).addChildTo(rect);
             }
         },
         drawMovableCell: function (movablePosList, visiblePosDic) { 
